@@ -1,0 +1,177 @@
+{
+  "id": "form_123",
+  "name": "Contact Us",
+  "status": "published",
+  "theme": {
+    "primaryColor": "#4F46E5",
+    "backgroundColor": "#F9FAFB",
+    "fontFamily": "Inter"
+  },
+  "globalCss": "*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } :root { --primary: #38BDF8; --primary-dark: #0284C7; --primary-soft: rgba(56, 189, 248, 0.1); --danger: #EF4444; --success: #10B981; --warning: #F59E0B; --bg: #0F172A; --surface: #1E293B; --surface-2: #334155; --border: #334155; --border-focus: #38BDF8; --text: #F8FAFC; --text-2: #94A3B8; --text-3: #64748B; --radius: 8px; --radius-lg: 12px; --shadow: 0 4px 6px -1px rgba(0,0,0,.3), 0 2px 4px -1px rgba(0,0,0,.2); --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.3), 0 4px 6px -2px rgba(0,0,0,.2); --transition: .2s ease-in-out; } .form-page-wrapper { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; } .form-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 16px 80px; background: var(--bg); } .form-card { width: 100%; max-width: 780px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; } .form-header { padding: 36px 40px 28px; background: rgba(30, 41, 59, 0.5); border-bottom: 1px solid var(--border); color: #fff; position: relative; overflow: hidden; } .form-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,.03); } .form-header::after { content: ''; position: absolute; bottom: -60px; left: -20px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,.02); } .form-title { font-size: 26px; font-weight: 700; letter-spacing: -.4px; position: relative; z-index: 1; } .form-page-title { font-size: 14px; font-weight: 500; margin-top: 4px; opacity: .8; position: relative; z-index: 1; } .form-progress { padding: 0 40px; background: var(--primary); } .form-progress-bar-wrap { height: 4px; background: rgba(255,255,255,.25); border-radius: 4px; overflow: hidden; } .form-progress-bar-fill { height: 100%; border-radius: 4px; background: #0F172A; transition: width .4s ease; } .form-progress-label { display: flex; justify-content: flex-end; padding: 6px 0 0; font-size: 12px; color: rgba(255,255,255,.75); font-weight: 500; padding-bottom: 8px; } .form-body { padding: 36px 40px; } .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .form-grid .field-full { grid-column: 1 / -1; } @media (max-width: 580px) { .form-grid { grid-template-columns: 1fr; } .form-header, .form-body, .form-progress { padding-left: 20px; padding-right: 20px; } } .field-wrap { display: flex; flex-direction: column; gap: 6px; } .field-label { font-size: 13.5px; font-weight: 600; color: var(--text); letter-spacing: .01em; } .field-label .required-star { color: var(--danger); margin-left: 3px; } .field-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--text); background: #0F172A; outline: none; transition: border-color var(--transition), box-shadow var(--transition); appearance: none; } .field-input::placeholder { color: var(--text-3); } .field-input:hover { border-color: #475569; } .field-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(56,189,248,.15); } textarea.field-input { resize: vertical; min-height: 90px; line-height: 1.5; } select.field-input { cursor: pointer; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; } .field-radio-group, .field-checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2px; } .field-radio-item, .field-checkbox-item { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid var(--border); border-radius: 50px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-2); transition: all var(--transition); user-select: none; background: var(--surface); } .field-radio-item:hover, .field-checkbox-item:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); } .field-radio-item input, .field-checkbox-item input { accent-color: var(--primary); width: 15px; height: 15px; } .field-multiselect-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; } .field-tag { padding: 7px 14px; border: 1px solid var(--border); border-radius: 50px; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all var(--transition); background: var(--surface); user-select: none; } .field-tag.selected { background: var(--primary); border-color: var(--primary); color: #0F172A; } .field-tag:hover:not(.selected) { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); } .field-file-label { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px dashed var(--text-3); border-radius: var(--radius); cursor: pointer; font-size: 13.5px; color: var(--text-2); transition: all var(--transition); background: var(--surface-2); } .field-file-label:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); } .field-file-icon { font-size: 20px; } .field-file-text { display: flex; flex-direction: column; } .field-file-hint { font-size: 11.5px; color: var(--text-3); margin-top: 2px; } .field-file-input { display: none; } .field-rating { display: flex; gap: 6px; flex-direction: row-reverse; justify-content: flex-end; } .field-rating input { display: none; } .field-rating label { font-size: 28px; color: var(--border); cursor: pointer; transition: color var(--transition), transform var(--transition); } .field-rating input:checked ~ label, .field-rating label:hover, .field-rating label:hover ~ label { color: var(--warning); transform: scale(1.1); } .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); gap: 12px; } .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; border: none; transition: all var(--transition); } .btn-primary { background: var(--primary); color: #0F172A; box-shadow: 0 4px 14px rgba(56,189,248,.15); } .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(56,189,248,.25); } .btn-primary:active { transform: translateY(0); } .btn-secondary { background: transparent; color: var(--text-2); border: 1px solid var(--border); } .btn-secondary:hover { border-color: var(--text-2); color: var(--text); background: var(--surface-2); } .btn-spacer { flex: 1; } .form-success { text-align: center; padding: 60px 40px; } .form-success-icon { font-size: 56px; margin-bottom: 16px; animation: pop .4s ease; } .form-success h3 { font-size: 22px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px; } .form-success p { font-size: 15px; color: var(--text-2); } @keyframes pop { 0% { transform: scale(.5); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } } .form-steps { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 14px 40px 0; background: var(--primary); } .form-step-dot { width: 8px; height: 8px; border-radius: 50%; background: #0F172A; opacity: 0.35; transition: all .25s; } .form-step-dot.active { opacity: 1; transform: scale(1.3); } ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; } .validation-error-msg { color: var(--danger); font-size: 12px; margin-top: 4px; font-weight: 500; animation: fadeIn 0.2s ease; } @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } } .field-input.has-error { border-color: var(--danger); } .field-input.has-error:focus { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }",
+  "layout": {
+    "type": "2-column",
+    "spacing": "16px"
+  },
+  "pages": [
+    {
+      "id": "page_1",
+      "title": "Basic Info",
+      "fields": [
+        {
+          "id": "field_name",
+          "type": "text",
+          "label": "Full Name",
+          "placeholder": "Enter your name",
+          "required": true,
+          "validation": {
+            "minLength": 2,
+            "maxLength": 50
+          }
+        },
+        {
+          "id": "field_email",
+          "type": "email",
+          "label": "Email",
+          "required": true,
+          "validation": {
+            "pattern": "email"
+          }
+        },
+        {
+          "id": "field_phone",
+          "type": "phone",
+          "label": "Mobile Number",
+          "required": true,
+          "validation": {
+            "pattern": "^[6-9][0-9]{9}$"
+          }
+        },
+        {
+          "id": "field_dob",
+          "type": "date",
+          "label": "Date of Birth",
+          "required": true
+        },
+        {
+          "id": "field_gender",
+          "type": "radio",
+          "label": "Gender",
+          "required": true,
+          "options": [
+            "Male",
+            "Female",
+            "Other"
+          ]
+        },
+        {
+          "id": "field_profile_pic",
+          "type": "file",
+          "label": "Upload Profile Picture",
+          "accept": [
+            "image/png",
+            "image/jpeg"
+          ],
+          "maxSizeMB": 2
+        }
+      ]
+    },
+    {
+      "id": "page_2",
+      "title": "Additional Info",
+      "fields": [
+        {
+          "id": "field_country",
+          "type": "dropdown",
+          "label": "Country",
+          "options": [
+            "India",
+            "USA",
+            "UK"
+          ],
+          "required": true
+        },
+        {
+          "id": "field_state",
+          "type": "text",
+          "label": "State",
+          "conditions": [
+            {
+              "field": "field_country",
+              "operator": "equals",
+              "value": "India"
+            }
+          ]
+        },
+        {
+          "id": "field_city",
+          "type": "text",
+          "label": "City"
+        },
+        {
+          "id": "field_address",
+          "type": "textarea",
+          "label": "Full Address",
+          "rows": 3,
+          "required": true
+        },
+        {
+          "id": "field_skills",
+          "type": "multiselect",
+          "label": "Skills",
+          "options": [
+            "Java",
+            "Spring Boot",
+            "Angular",
+            "React",
+            "Python"
+          ]
+        },
+        {
+          "id": "field_experience",
+          "type": "number",
+          "label": "Years of Experience",
+          "validation": {
+            "min": 0,
+            "max": 50
+          }
+        },
+        {
+          "id": "field_newsletter",
+          "type": "checkbox",
+          "label": "Subscribe to Newsletter"
+        },
+        {
+          "id": "field_rating",
+          "type": "rating",
+          "label": "Rate our service",
+          "max": 5,
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "page_3",
+      "title": "Additional Info",
+      "fields": [
+        {
+          "id": "field_country2",
+          "type": "dropdown",
+          "label": "Country",
+          "options": [
+            "India",
+            "USA",
+            "UK"
+          ],
+          "required": true
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "submitUrl": "http://localhost:8081/api/forms/123/submit",
+    "submitText": "Submit",
+    "nextText": "Next Page",
+    "previousText": "Previous Page",
+    "successMessage": "Thanks! We will contact you."
+  }
+}
