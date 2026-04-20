@@ -77,6 +77,26 @@ function buildRowsFromFields(fields, columnCount) {
   return rows;
 }
 
+function normalizeRowsFromNestedFields(rows, pageIndex, seenIds, collectedFields) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return [createRow()];
+  }
+
+  return rows.map((row, rowIndex) => {
+    const rowFields = (row.fields || [])
+      .map((field, fieldIndex) => normalizeField(field, fieldIndex, seenIds))
+      .filter(Boolean);
+
+    collectedFields.push(...rowFields);
+
+    return {
+      id: row.id || `row_${pageIndex + 1}_${rowIndex + 1}`,
+      grid: row.grid || null,
+      fieldIds: rowFields.map((field) => field.id),
+    };
+  });
+}
+
 export function isBuilderSchema(payload) {
   const source = payload?.schema ?? payload;
   if (!source || !Array.isArray(source.pages)) return false;
@@ -120,6 +140,27 @@ export function normalizeBuilderSchema(payload) {
             }))
           : [createRow()],
       })),
+    };
+  }
+
+  if (source.pages?.some((page) => Array.isArray(page.rows))) {
+    const fields = [];
+    const pages = source.pages.map((page, pageIndex) => ({
+      id: page.id || `page_${pageIndex + 1}`,
+      title: page.title || `Page ${pageIndex + 1}`,
+      grid: page.grid || null,
+      rows: normalizeRowsFromNestedFields(page.rows, pageIndex, seenIds, fields),
+    }));
+
+    return {
+      id: outer.id || payload?.id,
+      title,
+      theme,
+      settings,
+      globalCss,
+      grid,
+      fields,
+      pages,
     };
   }
 
