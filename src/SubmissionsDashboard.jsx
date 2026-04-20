@@ -19,7 +19,10 @@ const SubmissionsDashboard = () => {
 
             const res = await fetch(url);
             const data = await res.json();
-            setSubmissions(Array.isArray(data) ? data : []);
+            const sortedData = Array.isArray(data)
+                ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                : [];
+            setSubmissions(sortedData);
         } catch (err) {
             console.error("Failed to fetch submissions:", err);
         } finally {
@@ -72,7 +75,6 @@ const SubmissionsDashboard = () => {
                             const subData = sub.data || sub;
                             // Extract the nested 'data' if it exists (created by our FormRenderer wrapping)
                             const rawAnswers = subData.data || subData;
-                            const userEmail = subData.email || rawAnswers.email || sub.createdAt || "Unknown User";
 
                             return (
                                 <div key={sub.id || idx} className={`submission-card ${expandedId === (sub.id || idx) ? 'expanded' : ''}`}>
@@ -80,8 +82,20 @@ const SubmissionsDashboard = () => {
                                         <div className="sub-card-title">
                                             <strong>Target Form: </strong> {sub.formId || "Unknown"}
                                         </div>
-                                        <div className="sub-card-meta">
-                                            <span className="sub-card-email">{userEmail}</span>
+                                        <div className="sub-card-meta" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <span className="sub-card-time" style={{ color: 'var(--primary)', fontWeight: '600', fontSize: '14px' }}>
+                                                {sub.createdAt ? new Date(sub.createdAt).toLocaleString('en-IN', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit'
+                                                }) : 'Unknown Time'}
+                                            </span>
+                                            {subData.email || rawAnswers.email ? (
+                                                <span className="sub-card-email" style={{ fontSize: '12px', opacity: 0.8 }}>{subData.email || rawAnswers.email}</span>
+                                            ) : null}
                                         </div>
                                         <div className="sub-card-toggle">
                                             {expandedId === (sub.id || idx) ? '▲ Collapse Details' : '▼ View Payload'}
