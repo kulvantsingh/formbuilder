@@ -120,8 +120,8 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
               {pages.length > 1 && (
                 <>
                   <div className="builder-progress-row">
-                    <span>{currentPage.title || `Step ${currentPageIndex + 1}`}</span>
-                    <span>Step {currentPageIndex + 1} of {pages.length}</span>
+                    <span>{currentPage.title || `Page ${currentPageIndex + 1}`}</span>
+                    <span>Page {currentPageIndex + 1} of {pages.length}</span>
                   </div>
                   <div className="builder-progress-track">
                     <div
@@ -135,7 +135,7 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
 
             <div className="builder-body">
               {currentPage.rows.map((row) => {
-                const effectiveGrid = row.grid || runtimeSchema.grid;
+                const effectiveGrid = row.grid || currentPage.grid || runtimeSchema.grid;
                 const rowFields = row.fieldIds
                   .map((fieldId) => runtimeSchema.fields.find((field) => field.id === fieldId))
                   .filter(Boolean);
