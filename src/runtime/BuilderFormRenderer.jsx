@@ -34,7 +34,10 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   const isFirstPage = currentPageIndex === 0;
   const isLastPage = currentPageIndex === pages.length - 1;
 
-  const handleNext = async () => {
+  const handleNext = async (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
     const pageFieldIds = currentPage.rows.flatMap((row) => row.fieldIds);
     const pageFields = pageFieldIds
       .map((fieldId) => runtimeSchema.fields.find((field) => field.id === fieldId))
@@ -45,13 +48,17 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
     if (isValid) setCurrentPageIndex((value) => value + 1);
   };
 
-  const handlePrev = () => {
+  const handlePrev = (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
     setCurrentPageIndex((value) => Math.max(0, value - 1));
   };
 
   const handleFormSubmit = async (data) => {
     if (onSubmit) {
       onSubmit(data);
+      console.log("Form submitted with data:", data);
       return;
     }
 
@@ -62,9 +69,16 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
     }
 
     try {
-      const endpoint = submitUrl.includes("{id}")
-        ? submitUrl.replace("{id}", runtimeSchema.id || schema?.id || "form")
-        : submitUrl;
+      const formId = runtimeSchema.id || schema?.id || "form";
+      let endpoint;
+
+      if (submitUrl.includes("{id}")) {
+        endpoint = submitUrl.replace("{id}", formId);
+      } else if (submitUrl.endsWith("/submit")) {
+        endpoint = submitUrl;
+      } else {
+        endpoint = `${submitUrl.replace(/\/$/, "")}/${formId}/submit`;
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -144,18 +158,32 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
             <div className="builder-actions">
               <div>
                 {!isFirstPage && (
-                  <button type="button" className="builder-btn builder-btn-ghost" onClick={handlePrev}>
+                  <button
+                    key={`prev-${currentPageIndex}`}
+                    type="button"
+                    className="builder-btn builder-btn-ghost"
+                    onClick={handlePrev}
+                  >
                     {runtimeSchema.settings?.previousText || "Previous"}
                   </button>
                 )}
               </div>
               <div>
                 {!isLastPage ? (
-                  <button type="button" className="builder-btn builder-btn-primary" onClick={handleNext}>
+                  <button
+                    key={`next-${currentPageIndex}`}
+                    type="button"
+                    className="builder-btn builder-btn-primary"
+                    onClick={handleNext}
+                  >
                     {runtimeSchema.settings?.nextText || "Next"}
                   </button>
                 ) : (
-                  <button type="submit" className="builder-btn builder-btn-primary">
+                  <button
+                    key={`submit-${currentPageIndex}`}
+                    type="submit"
+                    className="builder-btn builder-btn-primary"
+                  >
                     {runtimeSchema.settings?.submitText || "Submit"}
                   </button>
                 )}
