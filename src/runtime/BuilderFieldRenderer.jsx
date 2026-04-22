@@ -94,11 +94,13 @@ function InputControl({ field, register }) {
     const isAlphabet = /^[a-zA-Z\s]*$/.test(e.key);
     const isNumeric = /^[0-9]*$/.test(e.key);
 
+    const labels = allowed.map(a => typeof a === 'string' ? a : a.label);
+
     let allow = false;
-    if (allowed.includes("Alphabet") && isAlphabet) allow = true;
-    if (allowed.includes("Numeric") && isNumeric) allow = true;
-    if (allowed.includes("Alphanumeric") && (isAlphabet || isNumeric)) allow = true;
-    if (allowed.includes("Languages")) allow = true; // allow all
+    if (labels.includes("Alphabet") && isAlphabet) allow = true;
+    if (labels.includes("Numeric") && isNumeric) allow = true;
+    if (labels.includes("Alphanumeric/ Special Characters") || labels.includes("Alphanumeric") && (isAlphabet || isNumeric)) allow = true;
+    if (labels.includes("Different languages") || labels.includes("Languages")) allow = true; // allow all
 
     if (!allow) {
       e.preventDefault();
