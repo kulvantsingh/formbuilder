@@ -127,17 +127,21 @@ export function normalizeBuilderSchema(payload) {
       settings,
       globalCss,
       grid,
+      instructions: source.instructions,
+      showInstructionsPopup: source.showInstructionsPopup,
       fields,
       pages: source.pages.map((page, pageIndex) => ({
         id: page.id || `page_${pageIndex + 1}`,
         title: page.title || `Page ${pageIndex + 1}`,
         grid: page.grid || null,
+        instructions: page.instructions,
+        showInstructionsPopup: page.showInstructionsPopup,
         rows: page.rows.length > 0
           ? page.rows.map((row) => ({
-              id: row.id || `row_${pageIndex + 1}_${Math.random().toString(36).slice(2, 8)}`,
-              grid: row.grid || null,
-              fieldIds: (row.fieldIds || []).filter((fieldId) => validFieldIds.has(fieldId)),
-            }))
+            id: row.id || `row_${pageIndex + 1}_${Math.random().toString(36).slice(2, 8)}`,
+            grid: row.grid || null,
+            fieldIds: (row.fieldIds || []).filter((fieldId) => validFieldIds.has(fieldId)),
+          }))
           : [createRow()],
       })),
     };
@@ -149,6 +153,8 @@ export function normalizeBuilderSchema(payload) {
       id: page.id || `page_${pageIndex + 1}`,
       title: page.title || `Page ${pageIndex + 1}`,
       grid: page.grid || null,
+      instructions: page.instructions,
+      showInstructionsPopup: page.showInstructionsPopup,
       rows: normalizeRowsFromNestedFields(page.rows, pageIndex, seenIds, fields),
     }));
 
@@ -159,6 +165,8 @@ export function normalizeBuilderSchema(payload) {
       settings,
       globalCss,
       grid,
+      instructions: source.instructions,
+      showInstructionsPopup: source.showInstructionsPopup,
       fields,
       pages,
     };
@@ -176,6 +184,8 @@ export function normalizeBuilderSchema(payload) {
       id: page.id || `page_${pageIndex + 1}`,
       title: page.title || `Page ${pageIndex + 1}`,
       grid: page.grid || null,
+      instructions: page.instructions,
+      showInstructionsPopup: page.showInstructionsPopup,
       rows: buildRowsFromFields(pageFields, grid.columns?.length),
     };
   });
@@ -187,6 +197,8 @@ export function normalizeBuilderSchema(payload) {
     settings,
     globalCss,
     grid,
+    instructions: source.instructions,
+    showInstructionsPopup: source.showInstructionsPopup,
     fields,
     pages,
   };

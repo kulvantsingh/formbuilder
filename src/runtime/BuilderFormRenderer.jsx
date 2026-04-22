@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import BuilderFieldRenderer from "./BuilderFieldRenderer";
 import { normalizeBuilderSchema } from "./builderRuntimeSchema";
@@ -19,6 +19,9 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   const runtimeSchema = useMemo(() => normalizeBuilderSchema(schema), [schema]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupText, setPopupText] = useState("");
+  const [seenPopups, setSeenPopups] = useState(new Set());
 
   const {
     register,
@@ -33,6 +36,25 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   const currentPage = pages[currentPageIndex];
   const isFirstPage = currentPageIndex === 0;
   const isLastPage = currentPageIndex === pages.length - 1;
+
+  useEffect(() => {
+    if (!currentPage) return;
+
+    // Check form-level popup first
+    if (runtimeSchema.showInstructionsPopup && !seenPopups.has("FORM_GLOBAL")) {
+      setPopupText(runtimeSchema.instructions || "Please read instructions carefully.");
+      setShowPopup(true);
+      setSeenPopups(prev => new Set(prev).add("FORM_GLOBAL"));
+      return;
+    }
+
+    // Check page-level popup
+    if (currentPage.showInstructionsPopup && !seenPopups.has(`PAGE_${currentPage.id}`)) {
+      setPopupText(currentPage.instructions || "Please read instructions carefully.");
+      setShowPopup(true);
+      setSeenPopups(prev => new Set(prev).add(`PAGE_${currentPage.id}`));
+    }
+  }, [currentPageIndex, runtimeSchema, currentPage, seenPopups]);
 
   const handleNext = async (event) => {
     event?.preventDefault();
@@ -112,6 +134,31 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   return (
     <div className="builder-runtime">
       <style dangerouslySetInnerHTML={{ __html: runtimeSchema.globalCss || "" }} />
+      {showPopup && (
+        <div className="builder-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px', backdropFilter: 'blur(4px)'
+        }}>
+          <div className="builder-modal-content" style={{
+            background: 'var(--color-bg, white)', padding: '32px', borderRadius: '12px',
+            maxWidth: '500px', width: '100%', color: 'var(--color-text, black)', whiteSpace: 'pre-wrap',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>Instructions</h3>
+            <div style={{ marginBottom: '24px', lineHeight: '1.6', fontSize: '15px' }}>{popupText}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="builder-btn builder-btn-primary"
+                onClick={() => setShowPopup(false)}
+              >
+                Acknowledge and Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="canvas-area">
         <div className="canvas-inner">
           <form onSubmit={handleSubmit(handleFormSubmit)}>
