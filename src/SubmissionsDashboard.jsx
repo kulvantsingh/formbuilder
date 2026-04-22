@@ -104,7 +104,26 @@ const SubmissionsDashboard = () => {
 
                                     {expandedId === (sub.id || idx) && (
                                         <div className="sub-card-content">
-                                            <pre className="json-viewer">
+                                            <div className="table-responsive" style={{ padding: '32px', paddingBottom: '0', overflowX: 'auto' }}>
+                                                <table className="submissions-table" style={{ whiteSpace: 'nowrap' }}>
+                                                    <thead>
+                                                        <tr>
+                                                            {Object.keys(rawAnswers).map((key) => (
+                                                                <th key={key}>{key}</th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            {Object.values(rawAnswers).map((value, vIdx) => (
+                                                                <td key={vIdx}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+                                                            ))}
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div style={{ padding: '0 32px', marginTop: '24px', fontSize: '14px', fontWeight: 'bold', color: 'var(--primary)' }}>Raw JSON Payload:</div>
+                                            <pre className="json-viewer" style={{ paddingTop: '16px' }}>
                                                 {JSON.stringify(rawAnswers, null, 2)}
                                             </pre>
                                         </div>

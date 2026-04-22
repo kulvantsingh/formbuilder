@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import FormRenderer from "./FormRenderer";
 import SubmissionsDashboard from "./SubmissionsDashboard";
+import MasterSubmissionsTable from "./MasterSubmissionsTable";
 
 function App() {
   const [viewMode, setViewMode] = useState("templates");
@@ -65,6 +66,9 @@ function App() {
             <li className={`template-item ${viewMode === 'submissions' ? 'active' : ''}`} onClick={() => setViewMode('submissions')}>
               <span className="template-name">📥 Inbox Dashboard</span>
             </li>
+            <li className={`template-item ${viewMode === 'master_table' ? 'active' : ''}`} onClick={() => setViewMode('master_table')}>
+              <span className="template-name">📊 Master Data Table</span>
+            </li>
           </ul>
         </div>
       </aside>
@@ -72,6 +76,8 @@ function App() {
       <main className="main-content">
         {viewMode === "submissions" ? (
           <SubmissionsDashboard />
+        ) : viewMode === "master_table" ? (
+          <MasterSubmissionsTable />
         ) : selectedTemplate ? (
           <FormRenderer key={selectedTemplate.id} schema={selectedTemplate} />
         ) : (

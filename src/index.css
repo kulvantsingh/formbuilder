@@ -409,3 +409,51 @@ code {
   border-color: #fff;
   color: #fff;
 }
+
+/* Premium Submissions Table Styles */
+.submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.submissions-table th {
+  background: rgba(0, 0, 0, 0.3);
+  text-align: left;
+  padding: 16px 24px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.submissions-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+  color: #E2E8F0;
+  line-height: 1.5;
+}
+
+.submissions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.submissions-table tbody tr {
+  transition: background 0.2s;
+}
+
+.submissions-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.submissions-table .field-name-cell {
+  font-weight: 600;
+  color: #94A3B8;
+  width: 30%;
+}
