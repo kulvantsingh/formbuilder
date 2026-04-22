@@ -147,6 +147,160 @@
   gap: 6px;
 }
 
+.builder-runtime .builder-form-table th,
+.builder-runtime .builder-form-table td {
+  border-color: var(--color-border);
+}
+
+.builder-runtime .attachment-field-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.builder-runtime .attachment-field-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.builder-runtime .attachment-field-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.builder-runtime .attachment-field-meta {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.builder-runtime .attachment-input-box {
+  border: 1.5px dashed var(--color-border);
+  background: linear-gradient(180deg, var(--color-bg), transparent);
+  border-radius: 12px;
+  padding: 12px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.builder-runtime .attachment-input-box:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-muted);
+}
+
+.builder-runtime .attachment-native-input {
+  width: 100%;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.builder-runtime .attachment-native-input::file-selector-button {
+  margin-right: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.builder-runtime .attachment-native-input::file-selector-button:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.builder-runtime .attachment-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.builder-runtime .attachment-file-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-muted);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 100%;
+  word-break: break-word;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.builder-runtime .attachment-file-chip:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.builder-runtime .attachment-empty-text {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.builder-runtime .attachment-preview-modal {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--panel-radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.builder-runtime .attachment-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.builder-runtime .attachment-preview-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.builder-runtime .attachment-preview-body {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+}
+
+.builder-runtime .attachment-preview-image {
+  max-width: 100%;
+  max-height: calc(90vh - 90px);
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: var(--shadow-md);
+}
+
+.builder-runtime .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+}
+
 .builder-runtime .builder-actions {
   margin-top: 32px;
   display: flex;
@@ -209,4 +363,23 @@
   .builder-runtime .canvas-inner {
     padding: 20px;
   }
+}
+
+.builder-runtime .builder-form-table {
+  table-layout: fixed;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+}
+
+.builder-runtime .builder-table-cell-input {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  height: 100%;
+  box-shadow: none;
+}
+
+.builder-runtime .builder-table-cell-input:focus {
+  box-shadow: none;
+  border-color: transparent;
 }

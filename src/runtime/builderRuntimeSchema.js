@@ -4,6 +4,7 @@ const DEFAULT_GRID = {
 };
 
 const BUILDER_FIELD_TYPES = new Set([
+  "heading",
   "text",
   "textarea",
   "number",
@@ -11,6 +12,11 @@ const BUILDER_FIELD_TYPES = new Set([
   "checkbox",
   "radio",
   "date",
+  "attachment",
+  "file",
+  "table",
+  "multiselect",
+  "rating",
 ]);
 
 function createRow(fieldIds = []) {
@@ -138,10 +144,10 @@ export function normalizeBuilderSchema(payload) {
         showInstructionsPopup: page.showInstructionsPopup,
         rows: page.rows.length > 0
           ? page.rows.map((row) => ({
-            id: row.id || `row_${pageIndex + 1}_${Math.random().toString(36).slice(2, 8)}`,
-            grid: row.grid || null,
-            fieldIds: (row.fieldIds || []).filter((fieldId) => validFieldIds.has(fieldId)),
-          }))
+              id: row.id || `row_${pageIndex + 1}_${Math.random().toString(36).slice(2, 8)}`,
+              grid: row.grid || null,
+              fieldIds: (row.fieldIds || []).filter((fieldId) => validFieldIds.has(fieldId)),
+            }))
           : [createRow()],
       })),
     };
