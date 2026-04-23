@@ -15,6 +15,23 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
   min-height: 100%;
   color: var(--color-text);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Dark theme overrides for the form renderer */
+.builder-runtime[data-theme="dark"] {
+  --color-bg: #0D1117;
+  --color-surface: #161B22;
+  --color-surface-hover: #1C2333;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-focus: #7C5CFC;
+  --color-primary: #7C5CFC;
+  --color-primary-hover: #A78BFA;
+  --color-primary-muted: rgba(124, 92, 252, 0.18);
+  --color-text: #E6EDF3;
+  --color-text-muted: #8B949E;
+  --color-danger: #f87171;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .builder-runtime *,

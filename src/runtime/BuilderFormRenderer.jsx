@@ -15,7 +15,7 @@ function buildGridContainerStyle(gridConfig) {
   };
 }
 
-export default function BuilderFormRenderer({ schema, onSubmit }) {
+export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
   const runtimeSchema = useMemo(() => normalizeBuilderSchema(schema), [schema]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -78,6 +78,8 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   };
 
   const handleFormSubmit = async (data) => {
+    console.log("📋 Submitted payload:", data);
+
     if (onSubmit) {
       onSubmit(data);
       console.log("Form submitted with data:", data);
@@ -102,11 +104,63 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
         endpoint = `${submitUrl.replace(/\/$/, "")}/${formId}/submit`;
       }
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
-      });
+      // Separate files from plain data
+      const plainData = {};
+      const files = []; // { fieldName, file }
+
+      for (const [key, value] of Object.entries(data)) {
+        if (value instanceof File) {
+          files.push({ fieldName: key, file: value });
+        } else if (value instanceof FileList) {
+          Array.from(value).forEach(file => files.push({ fieldName: key, file }));
+        } else if (
+          value &&
+          typeof value === "object" &&
+          value[0] instanceof File
+        ) {
+          // react-hook-form sometimes gives array-like objects
+          Array.from(value).forEach(file => files.push({ fieldName: key, file }));
+        } else {
+          plainData[key] = value;
+        }
+      }
+
+      let response;
+
+      if (files.length > 0) {
+        // Multipart submission: JSON metadata as 'data' part + each file keyed by its field name
+        const formData = new FormData();
+
+        // Send JSON payload with all non-file fields + a manifest of which fields have files
+        formData.append("data", JSON.stringify({
+          data: plainData,
+          fileFields: files.map(f => f.fieldName), // so backend knows which keys are files
+        }));
+
+        // Append each file using its field name as the key — backend uses this to identify it
+        files.forEach(({ fieldName, file }) => {
+          formData.append(fieldName, file, file.name);
+        });
+
+        console.log(
+          "Submitting multipart to", endpoint,
+          "| file fields:", files.map(f => `${f.fieldName}=${f.file.name}`)
+        );
+
+        response = await fetch(endpoint, {
+          method: "POST",
+          body: formData,
+          // DO NOT set Content-Type — browser sets it with the boundary automatically
+        });
+      } else {
+        // No files — plain JSON
+        console.log("Submitting as JSON to", endpoint);
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: plainData }),
+        });
+      }
 
       if (!response.ok) throw new Error(`Server returned ${response.status}`);
       setSubmitted(true);
@@ -120,7 +174,7 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
 
   if (submitted) {
     return (
-      <div className="builder-runtime">
+      <div className="builder-runtime" data-theme={theme}>
         <style dangerouslySetInnerHTML={{ __html: runtimeSchema.globalCss || "" }} />
         <div className="canvas-area">
           <div className="canvas-inner builder-success-card">
@@ -132,7 +186,7 @@ export default function BuilderFormRenderer({ schema, onSubmit }) {
   }
 
   return (
-    <div className="builder-runtime">
+    <div className="builder-runtime" data-theme={theme}>
       <style dangerouslySetInnerHTML={{ __html: runtimeSchema.globalCss || "" }} />
       {showPopup && (
         <div className="builder-modal-overlay" style={{
