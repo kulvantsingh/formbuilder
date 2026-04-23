@@ -19,8 +19,18 @@ function App() {
       const data = await response.json();
       console.log(data)
       setTemplates(data);
-      if (data.length > 0) {
-        setSelectedTemplate(data[0]); // auto-select first
+
+      // Restore last selected template from localStorage
+      const lastId = localStorage.getItem("lastSelectedFormId");
+      const lastTemplate = lastId
+        ? data.find(t => String(t.id) === lastId)
+        : null;
+
+      if (lastTemplate) {
+        setSelectedTemplate(lastTemplate);
+      } else if (data.length > 0) {
+        setSelectedTemplate(data[0]);
+        localStorage.setItem("lastSelectedFormId", String(data[0].id));
       }
     } catch (err) {
       console.error("Failed to fetch templates:", err);
@@ -48,7 +58,11 @@ function App() {
                 <li
                   key={tpl.id}
                   className={`template-item ${selectedTemplate?.id === tpl.id ? 'active' : ''}`}
-                  onClick={() => setSelectedTemplate(tpl)}
+                  onClick={() => {
+                    setSelectedTemplate(tpl);
+                    localStorage.setItem("lastSelectedFormId", String(tpl.id));
+                    setViewMode('templates'); // always switch to form view
+                  }}
                 >
                   <span className="template-name">{tpl.name || tpl.formId || `Template ${tpl.id}`}</span>
                   <span className="template-id">ID: {tpl.id}</span>
