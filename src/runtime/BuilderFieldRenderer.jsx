@@ -167,20 +167,22 @@ function AttachmentControl({ field, register }) {
       </div>
 
       {previewFile && createPortal(
-        <div className="modal-backdrop" onClick={() => setPreviewFile(null)}>
-          <div className="attachment-preview-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="attachment-preview-header">
-              <span className="attachment-preview-title">{previewFile.name}</span>
-              <button
-                type="button"
-                className="builder-btn builder-btn-ghost"
-                onClick={() => setPreviewFile(null)}
-              >
-                Close
-              </button>
-            </div>
-            <div className="attachment-preview-body">
-              <img src={previewUrl} alt={previewFile.name} className="attachment-preview-image" />
+        <div className="builder-runtime" style={{ display: "contents" }}>
+          <div className="modal-backdrop" onClick={() => setPreviewFile(null)}>
+            <div className="attachment-preview-modal" onClick={(event) => event.stopPropagation()}>
+              <div className="attachment-preview-header">
+                <span className="attachment-preview-title">{previewFile.name}</span>
+                <button
+                  type="button"
+                  className="builder-btn builder-btn-ghost"
+                  onClick={() => setPreviewFile(null)}
+                >
+                  Close
+                </button>
+              </div>
+              <div className="attachment-preview-body">
+                <img src={previewUrl} alt={previewFile.name} className="attachment-preview-image" />
+              </div>
             </div>
           </div>
         </div>,
