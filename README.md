@@ -29,6 +29,32 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+## SDK
+
+This project now includes a small JavaScript SDK entry at `src/sdk/formBuilderSdk.jsx`.
+It can:
+
+- download a schema from a URL
+- render the form into a target element
+- submit responses to the schema's `settings.submitUrl`
+
+Hosted browser bundle:
+
+```html
+<div id="form-root"></div>
+<script src="https://yourdomain.com/formbuilder-sdk.js"></script>
+<script>
+  window.FormBuilderSDK.mount("#form-root", {
+    schemaUrl: "https://your-api.com/forms/123",
+    submitUrl: "https://your-api.com/forms/{id}/submit"
+  });
+</script>
+```
+
+In this repo, the hosted file is [`public/formbuilder-sdk.js`](e:\FormBuilder\dynamic-form-builder\public\formbuilder-sdk.js#L1). After `npm run build`, it will be copied to the build output as `/formbuilder-sdk.js`.
+
+If you bundle this project in another app, you can also import the SDK from `src/sdk`.
+
 ### `npm run eject`
 
 **Note: this is a one-way operation. Once you `eject`, you can't go back!**
