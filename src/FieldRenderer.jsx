@@ -1,7 +1,11 @@
 import React from "react";
+import { sanitizeRichText } from "./richText";
 
 const getLabelText = (field) =>
   typeof field.label === "object" && field.label !== null ? field.label.text : field.label;
+
+const getLabelHtml = (field) =>
+  typeof field.label === "object" && field.label !== null ? field.label.html : undefined;
 
 const isPhoneLikeField = (field) => {
   const labelText = getLabelText(field) || "";
@@ -65,6 +69,7 @@ const FieldRenderer = ({ field, register, setValue, error, multiSelects = {}, on
   };
 
   const labelText = getLabelText(field);
+  const safeHeadingHtml = sanitizeRichText(getLabelHtml(field));
   const isRequired = field.required || field.validation?.required;
   const isPhoneLike = isPhoneLikeField(field);
 
@@ -105,6 +110,37 @@ const FieldRenderer = ({ field, register, setValue, error, multiSelects = {}, on
   const rules = getValidationRules(field);
 
   switch (field.type) {
+    case "heading": {
+      const headingStyle = {
+        margin: 0,
+        fontSize: field.styles?.fontSize ? `${field.styles.fontSize}px` : undefined,
+        fontWeight: field.styles?.fontWeight || 700,
+        textAlign: field.styles?.textAlign || "left",
+        color: field.styles?.color || "inherit",
+      };
+
+      if (safeHeadingHtml) {
+        return (
+          <div
+            className={wrapClass}
+            style={headingStyle}
+          >
+            <div
+              className="heading-rich-text"
+              dangerouslySetInnerHTML={{ __html: safeHeadingHtml }}
+            />
+          </div>
+        );
+      }
+
+      const Tag = field.styles?.fontSize >= 32 ? "h1" : field.styles?.fontSize >= 24 ? "h2" : "h3";
+      return (
+        <div className={wrapClass}>
+          <Tag style={{ ...headingStyle, fontSize: "inherit" }}>{labelText || "Heading"}</Tag>
+        </div>
+      );
+    }
+
     case "text":
     case "email":
     case "number":

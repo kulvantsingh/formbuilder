@@ -532,6 +532,27 @@ code {
   height: 100%;
 }
 
+.heading-rich-text > :first-child {
+  margin-top: 0;
+}
+
+.heading-rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.heading-rich-text p,
+.heading-rich-text ul,
+.heading-rich-text ol,
+.heading-rich-text blockquote,
+.heading-rich-text h1,
+.heading-rich-text h2,
+.heading-rich-text h3,
+.heading-rich-text h4,
+.heading-rich-text h5,
+.heading-rich-text h6 {
+  margin: 0;
+}
+
 /* Submissions Dashboard Premium Aesthetics */
 .dashboard-wrapper {
   box-sizing: border-box;
