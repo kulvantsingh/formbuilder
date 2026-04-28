@@ -226,6 +226,44 @@
       cursor: not-allowed;
     }
 
+    .fbsdk-submit-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(245, 246, 250, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 10;
+    }
+
+    .fbsdk-submit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--fbsdk-surface);
+      border: 1px solid var(--fbsdk-border);
+      color: var(--fbsdk-text);
+      box-shadow: var(--fbsdk-shadow);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .fbsdk-spinner {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--fbsdk-border);
+      border-top-color: var(--fbsdk-primary);
+      animation: fbsdk-spin 0.8s linear infinite;
+    }
+
+    @keyframes fbsdk-spin {
+      to { transform: rotate(360deg); }
+    }
+
     .fbsdk-success {
       padding: 40px 24px;
       text-align: center;
@@ -818,6 +856,7 @@
       errors: {},
       loading: true,
       error: null,
+      isSubmitting: false,
       submitted: false,
       popupDismissed: {},
     };
@@ -1174,7 +1213,7 @@
 
       app.innerHTML = [
         '<div class="fbsdk-shell" style="' + themeVars(schema) + '">',
-        '<div class="fbsdk-card">',
+        '<div class="fbsdk-card" style="position:relative;">',
         '<form data-action="submit-form">',
         '<div class="fbsdk-header">',
         '<h2 class="fbsdk-title">' + escapeHtml(schema.title) + "</h2>",
@@ -1194,6 +1233,7 @@
         "</div>",
         "</div>",
         "</form>",
+        state.isSubmitting ? '<div class="fbsdk-submit-overlay"><div class="fbsdk-submit-badge"><span class="fbsdk-spinner"></span><span>Submitting...</span></div></div>' : "",
         "</div>",
         renderPopup(schema, page),
         "</div>",
@@ -1243,36 +1283,43 @@
         return;
       }
 
-      var response;
-      if (fileEntries.length) {
-        var formData = new FormData();
-        formData.append("data", JSON.stringify({
-          data: payload,
-          fileFields: fileEntries.map(function (entry) { return entry.fieldName; }),
-        }));
-        fileEntries.forEach(function (entry) {
-          formData.append(entry.fieldName, entry.file, entry.file.name);
-        });
-        response = await fetch(submitUrl, {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        response = await fetch(submitUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: payload }),
-        });
-      }
-
-      if (!response.ok) {
-        throw new Error("Server returned " + response.status);
-      }
-
-      state.submitted = true;
+      state.isSubmitting = true;
       render();
-      if (typeof options.onSubmitSuccess === "function") options.onSubmitSuccess(payload, response);
-      if (typeof options.onSuccess === "function") options.onSuccess(payload, response);
+
+      try {
+        var response;
+        if (fileEntries.length) {
+          var formData = new FormData();
+          formData.append("data", JSON.stringify({
+            data: payload,
+            fileFields: fileEntries.map(function (entry) { return entry.fieldName; }),
+          }));
+          fileEntries.forEach(function (entry) {
+            formData.append(entry.fieldName, entry.file, entry.file.name);
+          });
+          response = await fetch(submitUrl, {
+            method: "POST",
+            body: formData,
+          });
+        } else {
+          response = await fetch(submitUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data: payload }),
+          });
+        }
+
+        if (!response.ok) {
+          throw new Error("Server returned " + response.status);
+        }
+
+        state.submitted = true;
+        render();
+        if (typeof options.onSubmitSuccess === "function") options.onSubmitSuccess(payload, response);
+        if (typeof options.onSuccess === "function") options.onSuccess(payload, response);
+      } finally {
+        state.isSubmitting = false;
+      }
     }
 
     function handleInput(event) {

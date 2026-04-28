@@ -298,7 +298,10 @@ export default function BuilderFormRenderer({
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
-                      <span className="builder-spinner"></span>
+                      <>
+                        <span className="builder-spinner" aria-hidden="true" />
+                        <span>Submitting...</span>
+                      </>
                     ) : (
                       runtimeSchema.settings?.submitText || "Submit"
                     )}

@@ -358,6 +358,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-width: 110px;
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
@@ -385,6 +386,21 @@
 .builder-runtime .builder-btn-ghost:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
+}
+
+.builder-runtime .builder-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.builder-runtime .builder-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: builder-spin 0.8s linear infinite;
 }
 
 .builder-runtime .builder-success-card {
@@ -425,4 +441,10 @@
 .builder-runtime .builder-table-cell-input:focus {
   box-shadow: none;
   border-color: transparent;
+}
+
+@keyframes builder-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
