@@ -574,7 +574,7 @@ function InputControl({ field, register, errors }) {
     }
     case "attachment":
     case "file":
-      return <AttachmentControl field={field} register={register} rules={rules} hasError={!!error} />;
+      return <AttachmentControl field={field} register={register} rules={rules} hasError={!!errorsg} />;
     case "multiselect":
       return (
         <select className="builder-form-input" multiple style={{ ...(field.styles || {}), minHeight: "80px" }} {...inputProps}>
