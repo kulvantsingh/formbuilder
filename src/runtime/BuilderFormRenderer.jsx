@@ -15,10 +15,17 @@ function buildGridContainerStyle(gridConfig) {
   };
 }
 
-export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
+export default function BuilderFormRenderer({
+  schema,
+  onSubmit,
+  onSubmitSuccess,
+  onSubmitError,
+  theme,
+}) {
   const runtimeSchema = useMemo(() => normalizeBuilderSchema(schema), [schema]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [popupText, setPopupText] = useState("");
   const [seenPopups, setSeenPopups] = useState(new Set());
@@ -40,19 +47,17 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
   useEffect(() => {
     if (!currentPage) return;
 
-    // Check form-level popup first
     if (runtimeSchema.showInstructionsPopup && !seenPopups.has("FORM_GLOBAL")) {
       setPopupText(runtimeSchema.instructions || "Please read instructions carefully.");
       setShowPopup(true);
-      setSeenPopups(prev => new Set(prev).add("FORM_GLOBAL"));
+      setSeenPopups((prev) => new Set(prev).add("FORM_GLOBAL"));
       return;
     }
 
-    // Check page-level popup
     if (currentPage.showInstructionsPopup && !seenPopups.has(`PAGE_${currentPage.id}`)) {
       setPopupText(currentPage.instructions || "Please read instructions carefully.");
       setShowPopup(true);
-      setSeenPopups(prev => new Set(prev).add(`PAGE_${currentPage.id}`));
+      setSeenPopups((prev) => new Set(prev).add(`PAGE_${currentPage.id}`));
     }
   }, [currentPageIndex, runtimeSchema, currentPage, seenPopups]);
 
@@ -78,20 +83,21 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
   };
 
   const handleFormSubmit = async (data) => {
-    console.log("📋 Submitted payload:", data);
+    console.log("Submitted payload:", data);
 
     if (onSubmit) {
       onSubmit(data);
-      console.log("Form submitted with data:", data);
       return;
     }
 
     const submitUrl = runtimeSchema.settings?.submitUrl;
     if (!submitUrl) {
       setSubmitted(true);
+      onSubmitSuccess?.(data, null);
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const formId = runtimeSchema.id || schema?.id || "form";
       let endpoint;
@@ -104,22 +110,16 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
         endpoint = `${submitUrl.replace(/\/$/, "")}/${formId}/submit`;
       }
 
-      // Separate files from plain data
       const plainData = {};
-      const files = []; // { fieldName, file }
+      const files = [];
 
       for (const [key, value] of Object.entries(data)) {
         if (value instanceof File) {
           files.push({ fieldName: key, file: value });
         } else if (value instanceof FileList) {
-          Array.from(value).forEach(file => files.push({ fieldName: key, file }));
-        } else if (
-          value &&
-          typeof value === "object" &&
-          value[0] instanceof File
-        ) {
-          // react-hook-form sometimes gives array-like objects
-          Array.from(value).forEach(file => files.push({ fieldName: key, file }));
+          Array.from(value).forEach((file) => files.push({ fieldName: key, file }));
+        } else if (value && typeof value === "object" && value[0] instanceof File) {
+          Array.from(value).forEach((file) => files.push({ fieldName: key, file }));
         } else {
           plainData[key] = value;
         }
@@ -128,45 +128,35 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
       let response;
 
       if (files.length > 0) {
-        // Multipart submission: JSON metadata as 'data' part + each file keyed by its field name
         const formData = new FormData();
 
-        // Send JSON payload with all non-file fields + a manifest of which fields have files
-        formData.append("data", JSON.stringify({
-          data: plainData,
-          fileFields: files.map(f => f.fieldName), // so backend knows which keys are files
-        }));
+        formData.append("data", JSON.stringify(plainData));
 
-        // Append each file using its field name as the key — backend uses this to identify it
         files.forEach(({ fieldName, file }) => {
           formData.append(fieldName, file, file.name);
         });
 
-        console.log(
-          "Submitting multipart to", endpoint,
-          "| file fields:", files.map(f => `${f.fieldName}=${f.file.name}`)
-        );
-
         response = await fetch(endpoint, {
           method: "POST",
           body: formData,
-          // DO NOT set Content-Type — browser sets it with the boundary automatically
         });
       } else {
-        // No files — plain JSON
-        console.log("Submitting as JSON to", endpoint);
         response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: plainData }),
+          body: JSON.stringify(plainData),
         });
       }
 
       if (!response.ok) throw new Error(`Server returned ${response.status}`);
       setSubmitted(true);
+      onSubmitSuccess?.(data, response);
     } catch (error) {
       console.error("Builder form submission failed:", error);
+      onSubmitError?.(error);
       alert("Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -189,19 +179,43 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
     <div className="builder-runtime" data-theme={theme}>
       <style dangerouslySetInnerHTML={{ __html: runtimeSchema.globalCss || "" }} />
       {showPopup && (
-        <div className="builder-modal-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, padding: '20px', backdropFilter: 'blur(4px)'
-        }}>
-          <div className="builder-modal-content" style={{
-            background: 'var(--color-bg, white)', padding: '32px', borderRadius: '12px',
-            maxWidth: '500px', width: '100%', color: 'var(--color-text, black)', whiteSpace: 'pre-wrap',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>Instructions</h3>
-            <div style={{ marginBottom: '24px', lineHeight: '1.6', fontSize: '15px' }}>{popupText}</div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div
+          className="builder-modal-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            className="builder-modal-content"
+            style={{
+              background: "var(--color-bg, white)",
+              padding: "32px",
+              borderRadius: "12px",
+              maxWidth: "500px",
+              width: "100%",
+              color: "var(--color-text, black)",
+              whiteSpace: "pre-wrap",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "20px", fontWeight: "bold" }}>
+              Instructions
+            </h3>
+            <div style={{ marginBottom: "24px", lineHeight: "1.6", fontSize: "15px" }}>
+              {popupText}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 type="button"
                 className="builder-btn builder-btn-primary"
@@ -222,7 +236,9 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
                 <>
                   <div className="builder-progress-row">
                     <span>{currentPage.title || `Page ${currentPageIndex + 1}`}</span>
-                    <span>Page {currentPageIndex + 1} of {pages.length}</span>
+                    <span>
+                      Page {currentPageIndex + 1} of {pages.length}
+                    </span>
                   </div>
                   <div className="builder-progress-track">
                     <div
@@ -244,12 +260,7 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
                 return (
                   <div key={row.id} style={{ ...buildGridContainerStyle(effectiveGrid), marginBottom: 16 }}>
                     {rowFields.map((field) => (
-                      <BuilderFieldRenderer
-                        key={field.id}
-                        field={field}
-                        register={register}
-                        errors={errors}
-                      />
+                      <BuilderFieldRenderer key={field.id} field={field} register={register} errors={errors} />
                     ))}
                   </div>
                 );
@@ -284,8 +295,13 @@ export default function BuilderFormRenderer({ schema, onSubmit, theme }) {
                     key={`submit-${currentPageIndex}`}
                     type="submit"
                     className="builder-btn builder-btn-primary"
+                    disabled={isSubmitting}
                   >
-                    {runtimeSchema.settings?.submitText || "Submit"}
+                    {isSubmitting ? (
+                      <span className="builder-spinner"></span>
+                    ) : (
+                      runtimeSchema.settings?.submitText || "Submit"
+                    )}
                   </button>
                 )}
               </div>

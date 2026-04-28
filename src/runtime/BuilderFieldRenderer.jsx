@@ -178,14 +178,45 @@ function AttachmentControl({ field, register, rules, hasError }) {
   const registration = useMemo(() => {
     if (!register) return {};
 
+    const baseRules = buildRules(field);
+
+    if (field.validation?.maxFileSize) {
+      baseRules.validate = {
+        ...(baseRules.validate || {}),
+        maxSize: (fileList) => {
+          if (!fileList || fileList.length === 0) return true;
+          const maxSizeInBytes = field.validation.maxFileSize * 1024 * 1024;
+          for (let i = 0; i < fileList.length; i++) {
+            if (fileList[i].size > maxSizeInBytes) {
+              return `File ${fileList[i].name} exceeds maximum size of ${field.validation.maxFileSize}MB`;
+            }
+          }
+          return true;
+        }
+      };
+    }
+
+    if (field.validation?.maxFiles && field.multiple) {
+      baseRules.validate = {
+        ...(baseRules.validate || {}),
+        maxFiles: (fileList) => {
+          if (!fileList || fileList.length === 0) return true;
+          if (fileList.length > field.validation.maxFiles) {
+            return field.validation.messages?.maxFiles || `Maximum of ${field.validation.maxFiles} files allowed`;
+          }
+          return true;
+        }
+      };
+    }
+
     return register(field.name, {
-      ...rules,
+      ...baseRules,
       onChange: (event) => {
         const files = Array.from(event.target.files || []);
         setSelectedFiles(files);
       },
     });
-  }, [field.name, register, rules]);
+  }, [field.name, field.validation, register]);
 
   const previewUrl = useMemo(
     () => (previewFile ? URL.createObjectURL(previewFile) : ""),
@@ -279,7 +310,7 @@ function AttachmentControl({ field, register, rules, hasError }) {
   );
 }
 
-function TableControl({ field, register }) {
+function TableControl({ field, register, errors }) {
   const rows = field.rowCount || 2;
   const cols = field.columnCount || 3;
   const headers = field.headers || [];
@@ -373,14 +404,33 @@ function TableControl({ field, register }) {
               )}
               {Array.from({ length: cols }).map((_, colIndex) => {
                 const cellPath = `${field.name || field.id}[${rowIndex}][${colIndex}]`;
+                const cellError = errors?.[field.name || field.id]?.[rowIndex]?.[colIndex];
+
+                let activeCellRules;
+                const cellRuleKey = `${rowIndex}:${colIndex}`;
+                const cellValidation = field.validation?.cellRules?.[cellRuleKey];
+
+                if (cellValidation) {
+                  activeCellRules = buildRules({ validation: cellValidation, label: { text: "Cell" } });
+                } else {
+                  activeCellRules = buildRules(field);
+                }
+
                 return (
-                  <td key={colIndex} style={{ padding: 0, border: "1px solid var(--color-border)" }}>
-                    <input
-                      type="text"
-                      className="builder-form-input builder-table-cell-input"
-                      style={inputStyle}
-                      {...register(cellPath)}
-                    />
+                  <td key={colIndex} style={{ padding: "4px", border: "1px solid var(--color-border)", verticalAlign: "top" }}>
+                    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                      <input
+                        type="text"
+                        className={`builder-form-input builder-table-cell-input ${cellError ? "has-error" : ""}`}
+                        style={{ ...inputStyle, flex: 1 }}
+                        {...register(cellPath, activeCellRules)}
+                      />
+                      {cellError && (
+                        <span className="validation-error-msg" style={{ marginTop: "2px", fontSize: "11px", lineHeight: "1.2", padding: "0 4px" }}>
+                          {cellError.message}
+                        </span>
+                      )}
+                    </div>
                   </td>
                 );
               })}
@@ -392,7 +442,7 @@ function TableControl({ field, register }) {
   );
 }
 
-function InputControl({ field, register, error }) {
+function InputControl({ field, register, errors }) {
   const rules = buildRules(field);
   const inputProps = register(field.name, field.type === "number"
     ? { ...rules, valueAsNumber: true }
@@ -550,7 +600,7 @@ function InputControl({ field, register, error }) {
       );
     }
     case "table":
-      return <TableControl field={field} register={register} />;
+      return <TableControl field={field} register={register} errors={errors} />;
     case "text":
     default:
       return (
@@ -588,7 +638,7 @@ export default function BuilderFieldRenderer({ field, register, errors }) {
       )}
 
       {field.subLabel && <p className="builder-form-sublabel">{field.subLabel}</p>}
-      <InputControl field={field} register={register} error={error} />
+      <InputControl field={field} register={register} errors={errors} />
       {field.helperText && (
         <p
           className="builder-form-sublabel"
@@ -597,7 +647,7 @@ export default function BuilderFieldRenderer({ field, register, errors }) {
           {field.helperText}
         </p>
       )}
-      {error && <p className="builder-form-error">{error.message}</p>}
+      {error && !Array.isArray(error) && <p className="builder-form-error">{error.message}</p>}
     </div>
   );
 }
