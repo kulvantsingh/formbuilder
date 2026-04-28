@@ -145,6 +145,27 @@
   min-width: 0;
 }
 
+.builder-runtime .builder-heading-rich-text > :first-child {
+  margin-top: 0;
+}
+
+.builder-runtime .builder-heading-rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.builder-runtime .builder-heading-rich-text p,
+.builder-runtime .builder-heading-rich-text ul,
+.builder-runtime .builder-heading-rich-text ol,
+.builder-runtime .builder-heading-rich-text blockquote,
+.builder-runtime .builder-heading-rich-text h1,
+.builder-runtime .builder-heading-rich-text h2,
+.builder-runtime .builder-heading-rich-text h3,
+.builder-runtime .builder-heading-rich-text h4,
+.builder-runtime .builder-heading-rich-text h5,
+.builder-runtime .builder-heading-rich-text h6 {
+  margin: 0;
+}
+
 .builder-runtime .builder-check-row {
   display: flex;
   align-items: center;

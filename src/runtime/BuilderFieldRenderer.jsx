@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { sanitizeRichText } from "../richText";
 
 function buildGridItemStyle(pos) {
   if (!pos) return {};
@@ -361,6 +362,8 @@ function InputControl({ field, register, errors }) {
   const inputProps = register(field.name, field.type === "number"
     ? { ...rules, valueAsNumber: true }
     : rules);
+  const headingHtml = typeof field.label === "object" ? field.label?.html : undefined;
+  const safeHeadingHtml = useMemo(() => sanitizeRichText(headingHtml), [headingHtml]);
 
   const handleKeyDown = (e) => {
     const allowed = field.validation?.allowedCharacters;
@@ -458,15 +461,27 @@ function InputControl({ field, register, errors }) {
       );
     case "heading": {
       const Tag = field.styles?.fontSize >= 32 ? "h1" : field.styles?.fontSize >= 24 ? "h2" : "h3";
+      const headingStyle = {
+        margin: 0,
+        fontSize: "inherit",
+        fontWeight: field.styles?.fontWeight || 700,
+        textAlign: field.styles?.textAlign || "left",
+        color: field.styles?.color || "inherit",
+      };
+
+      if (safeHeadingHtml) {
+        return (
+          <div
+            className="builder-heading-rich-text"
+            style={headingStyle}
+            dangerouslySetInnerHTML={{ __html: safeHeadingHtml }}
+          />
+        );
+      }
+
       return (
         <Tag
-          style={{
-            margin: 0,
-            fontSize: "inherit",
-            fontWeight: field.styles?.fontWeight || 700,
-            textAlign: field.styles?.textAlign || "left",
-            color: field.styles?.color || "inherit",
-          }}
+          style={headingStyle}
         >
           {field.label?.text || "Heading"}
         </Tag>

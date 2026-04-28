@@ -36,7 +36,11 @@ function normalizeField(field, index, seenIds) {
 
   const label =
     typeof field.label === "object" && field.label !== null
-      ? { text: field.label.text || "Field", position: field.label.position || "top" }
+      ? {
+          text: field.label.text || "Field",
+          html: field.label.html || undefined,
+          position: field.label.position || "top",
+        }
       : { text: field.label || `Field ${index + 1}`, position: "top" };
 
   return {
