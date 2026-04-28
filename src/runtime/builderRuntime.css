@@ -227,6 +227,11 @@
   background: var(--color-primary-muted);
 }
 
+.builder-runtime .attachment-input-box.has-error {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+}
+
 .builder-runtime .attachment-native-input {
   width: 100%;
   color: var(--color-text);

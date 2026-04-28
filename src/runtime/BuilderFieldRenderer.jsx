@@ -14,6 +14,47 @@ function buildGridItemStyle(pos) {
   return style;
 }
 
+function getAcceptedFileTypes(field) {
+  if (Array.isArray(field.validation?.fileTypes) && field.validation.fileTypes.length > 0) {
+    return field.validation.fileTypes;
+  }
+  if (Array.isArray(field.accept) && field.accept.length > 0) {
+    return field.accept;
+  }
+  if (typeof field.accept === "string" && field.accept.trim()) {
+    return field.accept.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function toFileArray(value) {
+  if (!value) return [];
+  if (value instanceof FileList) return Array.from(value);
+  if (Array.isArray(value)) return value.filter((file) => file instanceof File);
+  if (value instanceof File) return [value];
+  if (typeof value === "object" && typeof value.length === "number") {
+    return Array.from(value).filter((file) => file instanceof File);
+  }
+  return [];
+}
+
+function matchesAcceptedFileType(file, acceptedType) {
+  if (!acceptedType) return true;
+
+  const normalizedType = acceptedType.trim().toLowerCase();
+  const fileType = (file.type || "").toLowerCase();
+  const fileName = (file.name || "").toLowerCase();
+
+  if (normalizedType.startsWith(".")) {
+    return fileName.endsWith(normalizedType);
+  }
+  if (normalizedType.endsWith("/*")) {
+    const prefix = normalizedType.slice(0, -1);
+    return fileType.startsWith(prefix);
+  }
+  return fileType === normalizedType;
+}
+
 function buildRules(field) {
   const validation = field.validation || {};
   const messages = validation.messages || {};
@@ -78,29 +119,73 @@ function buildRules(field) {
     };
   }
 
+  if (field.type === "attachment" || field.type === "file") {
+    const acceptedTypes = getAcceptedFileTypes(field);
+    const maxSizeMB = validation.maxSizeMB ?? validation.maxFileSizeMB ?? field.maxSizeMB;
+    const minFiles = validation.minFiles;
+    const maxFiles = validation.maxFiles;
+
+    rules.validate = {
+      ...(rules.validate || {}),
+      requiredFile: (value) => {
+        if (!validation.required) return true;
+        return toFileArray(value).length > 0 || messages.required || `${field.label?.text || "This field"} is required`;
+      },
+      acceptedFileTypes: (value) => {
+        const files = toFileArray(value);
+        if (files.length === 0 || acceptedTypes.length === 0) return true;
+        return files.every((file) => acceptedTypes.some((type) => matchesAcceptedFileType(file, type)))
+          || messages.fileTypes
+          || messages.accept
+          || `Accepted file types: ${acceptedTypes.join(", ")}`;
+      },
+      maxFileSize: (value) => {
+        const files = toFileArray(value);
+        if (files.length === 0 || maxSizeMB === undefined || maxSizeMB === null || maxSizeMB === "") return true;
+        const maxBytes = Number(maxSizeMB) * 1024 * 1024;
+        return files.every((file) => file.size <= maxBytes)
+          || messages.maxSizeMB
+          || messages.maxFileSizeMB
+          || `Each file must be ${maxSizeMB}MB or smaller`;
+      },
+      minFiles: (value) => {
+        const files = toFileArray(value);
+        if (files.length === 0 || minFiles === undefined || minFiles === null || minFiles === "") return true;
+        return files.length >= Number(minFiles)
+          || messages.minFiles
+          || `Select at least ${minFiles} file${Number(minFiles) === 1 ? "" : "s"}`;
+      },
+      maxFiles: (value) => {
+        const files = toFileArray(value);
+        if (files.length === 0 || maxFiles === undefined || maxFiles === null || maxFiles === "") return true;
+        return files.length <= Number(maxFiles)
+          || messages.maxFiles
+          || `Select no more than ${maxFiles} file${Number(maxFiles) === 1 ? "" : "s"}`;
+      },
+    };
+  }
+
   return rules;
 }
 
-function AttachmentControl({ field, register }) {
+function AttachmentControl({ field, register, rules, hasError }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewFile, setPreviewFile] = useState(null);
-  const acceptedTypes = Array.isArray(field.validation?.fileTypes)
-    ? field.validation.fileTypes.join(",")
-    : "";
-  const acceptedTypesLabel = Array.isArray(field.validation?.fileTypes)
-    ? field.validation.fileTypes.join(", ")
-    : "";
+  const acceptedTypeList = useMemo(() => getAcceptedFileTypes(field), [field]);
+  const acceptedTypes = acceptedTypeList.join(",");
+  const acceptedTypesLabel = acceptedTypeList.join(", ");
 
   const registration = useMemo(() => {
     if (!register) return {};
 
     return register(field.name, {
+      ...rules,
       onChange: (event) => {
         const files = Array.from(event.target.files || []);
         setSelectedFiles(files);
       },
     });
-  }, [field.name, register]);
+  }, [field.name, register, rules]);
 
   const previewUrl = useMemo(
     () => (previewFile ? URL.createObjectURL(previewFile) : ""),
@@ -136,12 +221,13 @@ function AttachmentControl({ field, register }) {
           )}
         </div>
 
-        <div className="attachment-input-box">
+        <div className={`attachment-input-box${hasError ? " has-error" : ""}`}>
           <input
             type="file"
             className="attachment-native-input"
             multiple={!!field.multiple}
             accept={acceptedTypes || undefined}
+            aria-invalid={hasError ? "true" : "false"}
             {...registration}
           />
         </div>
@@ -306,7 +392,7 @@ function TableControl({ field, register }) {
   );
 }
 
-function InputControl({ field, register }) {
+function InputControl({ field, register, error }) {
   const rules = buildRules(field);
   const inputProps = register(field.name, field.type === "number"
     ? { ...rules, valueAsNumber: true }
@@ -438,7 +524,7 @@ function InputControl({ field, register }) {
     }
     case "attachment":
     case "file":
-      return <AttachmentControl field={field} register={register} />;
+      return <AttachmentControl field={field} register={register} rules={rules} hasError={!!error} />;
     case "multiselect":
       return (
         <select className="builder-form-input" multiple style={{ ...(field.styles || {}), minHeight: "80px" }} {...inputProps}>
@@ -502,7 +588,7 @@ export default function BuilderFieldRenderer({ field, register, errors }) {
       )}
 
       {field.subLabel && <p className="builder-form-sublabel">{field.subLabel}</p>}
-      <InputControl field={field} register={register} />
+      <InputControl field={field} register={register} error={error} />
       {field.helperText && (
         <p
           className="builder-form-sublabel"
