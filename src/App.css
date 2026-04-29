@@ -62,7 +62,6 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 20px;
-  border-radius: 20px;
   background: var(--share-panel-bg);
   border: 1px solid var(--share-panel-border);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);

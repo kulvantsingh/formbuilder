@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import QRCode from "qrcode";
 import FormRenderer from "../FormRenderer";
-import { normalizeBuilderSchema } from "../runtime/builderRuntimeSchema";
+import { normalizeBuilderSchema, resolveSchemaFormId } from "../runtime/builderRuntimeSchema";
 
 const mountedRoots = new Map();
 
@@ -22,6 +23,65 @@ function ensureEndpoint(baseUrl, formId) {
     return baseUrl;
   }
   return `${baseUrl.replace(/\/$/, "")}/${formId}/submit`;
+}
+
+function resolveFormIdFromUrl(schemaUrl) {
+  if (!schemaUrl) return "";
+
+  try {
+    const parsedUrl = new URL(schemaUrl, window.location.href);
+    const parts = parsedUrl.pathname.split("/").filter(Boolean);
+    const formsIndex = parts.lastIndexOf("forms");
+
+    if (formsIndex >= 0 && parts[formsIndex + 1]) {
+      return decodeURIComponent(parts[formsIndex + 1]);
+    }
+
+    return decodeURIComponent(parts[parts.length - 1] || "");
+  } catch (error) {
+    const match = String(schemaUrl).match(/\/forms\/([^/?#]+)/i);
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+}
+
+export function buildShareUrl(baseUrl, formId, queryParam = "share") {
+  if (!baseUrl || formId === undefined || formId === null || formId === "") {
+    return "";
+  }
+
+  const safeBaseUrl = String(baseUrl).replace(/\/$/, "");
+  const safeParam = queryParam || "share";
+  return `${safeBaseUrl}?${encodeURIComponent(safeParam)}=${encodeURIComponent(formId)}`;
+}
+
+export async function createQrCodeDataUrl(text, options = {}) {
+  if (!text) return "";
+
+  return QRCode.toDataURL(text, {
+    width: 180,
+    margin: 2,
+    errorCorrectionLevel: "M",
+    color: {
+      dark: "#111111",
+      light: "#ffffff",
+    },
+    ...options,
+  });
+}
+
+export async function createShareArtifacts({
+  baseUrl,
+  formId,
+  queryParam = "share",
+  qrOptions = {},
+} = {}) {
+  const shareUrl = buildShareUrl(baseUrl, formId, queryParam);
+  const qrCodeUrl = shareUrl ? await createQrCodeDataUrl(shareUrl, qrOptions) : "";
+
+  return {
+    shareUrl,
+    qrCodeUrl,
+  };
 }
 
 async function fetchSchema(schemaUrl, requestOptions = {}) {
@@ -59,13 +119,19 @@ function unwrapSchemaPayload(payload) {
 
 function prepareSchema(schema, options) {
   const normalized = normalizeBuilderSchema(schema);
+  const resolvedFormId =
+    resolveSchemaFormId(normalized) ||
+    resolveFormIdFromUrl(options.schemaUrl) ||
+    resolveSchemaFormId(schema);
   const submitUrl =
     options.submitUrl ||
     normalized.settings?.submitUrl ||
-    (options.submitBaseUrl ? ensureEndpoint(options.submitBaseUrl, normalized.id || schema?.id || "form") : "");
+    (options.submitBaseUrl ? ensureEndpoint(options.submitBaseUrl, resolvedFormId) : "");
 
   return {
     ...normalized,
+    id: normalized.id || resolvedFormId,
+    formId: normalized.formId || resolvedFormId,
     theme: {
       ...(normalized.theme || {}),
       ...(options.theme || {}),
@@ -147,11 +213,12 @@ function EmbeddedForm({
     return prepareSchema(source, {
       submitUrl,
       submitBaseUrl,
+      schemaUrl,
       theme,
       settings,
       globalCss,
     });
-  }, [remoteSchema, schema, submitUrl, submitBaseUrl, theme, settings, globalCss]);
+  }, [remoteSchema, schema, submitUrl, submitBaseUrl, schemaUrl, theme, settings, globalCss]);
 
   if (loading) {
     return <div className="builder-runtime">{loadingFallback}</div>;
@@ -215,6 +282,9 @@ export function createFormBuilderSDK(defaultOptions = {}) {
     render: (target, options = {}) => mount(target, { ...defaultOptions, ...options }),
     unmount,
     loadSchema: (schemaUrl, requestOptions = {}) => fetchSchema(schemaUrl, requestOptions),
+    buildShareUrl,
+    createQrCodeDataUrl,
+    createShareArtifacts,
   };
 }
 

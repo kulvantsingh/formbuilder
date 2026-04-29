@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import BuilderFieldRenderer from "./BuilderFieldRenderer";
-import { normalizeBuilderSchema } from "./builderRuntimeSchema";
+import { normalizeBuilderSchema, resolveSchemaFormId } from "./builderRuntimeSchema";
 import "./builderRuntime.css";
 
 function buildGridContainerStyle(gridConfig) {
@@ -99,7 +99,7 @@ export default function BuilderFormRenderer({
 
     setIsSubmitting(true);
     try {
-      const formId = runtimeSchema.id || schema?.id || "form";
+      const formId = resolveSchemaFormId(runtimeSchema) || resolveSchemaFormId(schema) || "form";
       let endpoint;
 
       if (submitUrl.includes("{id}")) {

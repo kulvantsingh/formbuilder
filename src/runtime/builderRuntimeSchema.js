@@ -113,6 +113,23 @@ export function isBuilderSchema(payload) {
   return source.pages.some((page) => Array.isArray(page.rows) || Array.isArray(page.fields));
 }
 
+export function resolveSchemaFormId(payload) {
+  const outer = payload?.schema ? payload : { schema: payload };
+  const source = outer.schema || {};
+  const settings = source.settings || outer.settings || {};
+
+  return (
+    source.formId ||
+    outer.formId ||
+    settings.formId ||
+    settings.formIdentifier ||
+    source.id ||
+    outer.id ||
+    payload?.id ||
+    "form"
+  );
+}
+
 export function normalizeBuilderSchema(payload) {
   const outer = payload?.schema ? payload : { schema: payload };
   const source = outer.schema || {};
@@ -123,6 +140,7 @@ export function normalizeBuilderSchema(payload) {
   const globalCss = source.globalCss || outer.globalCss || "";
   const grid = source.grid?.columns?.length ? source.grid : DEFAULT_GRID;
   const title = source.title || outer.name || payload?.name || "Untitled Form";
+  const formId = resolveSchemaFormId(payload);
 
   if (Array.isArray(source.fields) && source.pages?.every((page) => Array.isArray(page.rows))) {
     const fields = source.fields
@@ -131,7 +149,8 @@ export function normalizeBuilderSchema(payload) {
     const validFieldIds = new Set(fields.map((field) => field.id));
 
     return {
-      id: outer.id || payload?.id,
+      id: outer.id || payload?.id || source.id || formId,
+      formId,
       title,
       theme,
       settings,
@@ -169,7 +188,8 @@ export function normalizeBuilderSchema(payload) {
     }));
 
     return {
-      id: outer.id || payload?.id,
+      id: outer.id || payload?.id || source.id || formId,
+      formId,
       title,
       theme,
       settings,
@@ -201,7 +221,8 @@ export function normalizeBuilderSchema(payload) {
   });
 
   return {
-    id: outer.id || payload?.id,
+    id: outer.id || payload?.id || source.id || formId,
+    formId,
     title,
     theme,
     settings,
