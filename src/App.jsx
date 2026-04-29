@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import FormRenderer from "./FormRenderer";
 import SubmissionsDashboard from "./SubmissionsDashboard";
 import MasterSubmissionsTable from "./MasterSubmissionsTable";
@@ -27,13 +28,11 @@ function App() {
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [sharePanelOpen, setSharePanelOpen] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   const currentUrl = window.location.origin + window.location.pathname;
   const shareUrl = selectedTemplate
     ? `${currentUrl}?share=${encodeURIComponent(selectedTemplate.id)}`
-    : "";
-  const qrCodeUrl = shareUrl
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`
     : "";
 
   const copyToClipboard = async (text) => {
@@ -119,6 +118,44 @@ function App() {
 
     fetchTemplates();
   }, [publicFormId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const generateQrCode = async () => {
+      if (!shareUrl) {
+        setQrCodeUrl("");
+        return;
+      }
+
+      try {
+        const dataUrl = await QRCode.toDataURL(shareUrl, {
+          width: 180,
+          margin: 2,
+          errorCorrectionLevel: "M",
+          color: {
+            dark: "#111111",
+            light: "#ffffff",
+          },
+        });
+
+        if (!cancelled) {
+          setQrCodeUrl(dataUrl);
+        }
+      } catch (error) {
+        console.error("Failed to generate QR code:", error);
+        if (!cancelled) {
+          setQrCodeUrl("");
+        }
+      }
+    };
+
+    generateQrCode();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shareUrl]);
 
   const filteredTemplates = templates.filter((tpl) =>
     (tpl.name || `Template ${tpl.id}`).toLowerCase().includes(sidebarSearch.toLowerCase())
@@ -294,7 +331,11 @@ function App() {
               <div className="share-qr-card">
                 <div className="share-section-label">QR code</div>
                 <div className="share-qr-wrap">
-                  <img src={qrCodeUrl} alt="QR code for shared form" className="share-qr-image" />
+                  {qrCodeUrl ? (
+                    <img src={qrCodeUrl} alt="QR code for shared form" className="share-qr-image" />
+                  ) : (
+                    <div className="share-qr-placeholder">Generating QR code...</div>
+                  )}
                   <div className="share-qr-copy">
                     <div className="share-qr-text">Scan this QR code to open the public form on another device.</div>
                     <a href={shareUrl} target="_blank" rel="noreferrer" className="share-qr-link">

@@ -254,6 +254,19 @@
   box-shadow: var(--share-qr-shadow);
 }
 
+.share-qr-placeholder {
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--share-qr-bg);
+  color: var(--share-panel-muted);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--share-qr-shadow);
+}
+
 .share-qr-copy {
   display: grid;
   gap: 8px;
