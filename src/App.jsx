@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import FormRenderer from "./FormRenderer";
 import SubmissionsDashboard from "./SubmissionsDashboard";
 import MasterSubmissionsTable from "./MasterSubmissionsTable";
+import "./App.css";
 
 const NAV_ITEMS = [
   { id: "templates", icon: "✦", label: "Form Builder" },
@@ -9,145 +10,247 @@ const NAV_ITEMS = [
   { id: "master_table", icon: "⊞", label: "Master Table" },
 ];
 
+function getQueryParams() {
+  return new URLSearchParams(window.location.search);
+}
+
 function App() {
+  const query = useMemo(() => getQueryParams(), []);
+  const publicFormId = query.get("share");
+  const publicMode = Boolean(publicFormId);
+
   const [viewMode, setViewMode] = useState("templates");
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("appTheme") || "dark"
-  );
+  const [theme, setTheme] = useState(() => localStorage.getItem("appTheme") || "dark");
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
+  const [sharePanelOpen, setSharePanelOpen] = useState(false);
+
+  const currentUrl = window.location.origin + window.location.pathname;
+  const shareUrl = selectedTemplate
+    ? `${currentUrl}?share=${encodeURIComponent(selectedTemplate.id)}`
+    : "";
+  const qrCodeUrl = shareUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`
+    : "";
+
+  const copyToClipboard = async (text) => {
+    if (!text) return false;
+
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (error) {
+      // Fall through to the legacy fallback below.
+      console.error("Clipboard API failed:", error);
+    }
+
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.pointerEvents = "none";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return success;
+    } catch (error) {
+      console.error("Legacy copy failed:", error);
+      return false;
+    }
+  };
+
+  const copyShareLink = async () => {
+    try {
+      const copied = await copyToClipboard(shareUrl);
+      if (!copied) throw new Error("Copy failed");
+      setCopyStatus("Link copied");
+      setTimeout(() => setCopyStatus(""), 1800);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  };
 
   const toggleTheme = () => {
-    setTheme(prev => {
+    setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
       localStorage.setItem("appTheme", next);
       return next;
     });
   };
 
-  useEffect(() => { fetchTemplates(); }, []);
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch("http://10.208.22.169:8086/forms");
+        const data = await response.json();
+        setTemplates(data);
 
-  const fetchTemplates = async () => {
-    try {
-      const response = await fetch("http://10.208.22.169:8086/forms");
-      const data = await response.json();
-      setTemplates(data);
-      const lastId = localStorage.getItem("lastSelectedFormId");
-      const lastTemplate = lastId ? data.find(t => String(t.id) === lastId) : null;
-      if (lastTemplate) {
-        setSelectedTemplate(lastTemplate);
-      } else if (data.length > 0) {
-        setSelectedTemplate(data[0]);
-        localStorage.setItem("lastSelectedFormId", String(data[0].id));
+        if (publicFormId) {
+          const sharedTemplate = data.find((t) => String(t.id) === String(publicFormId));
+          if (sharedTemplate) {
+            setSelectedTemplate(sharedTemplate);
+          }
+          return;
+        }
+
+        const lastId = localStorage.getItem("lastSelectedFormId");
+        const lastTemplate = lastId ? data.find((t) => String(t.id) === lastId) : null;
+        if (lastTemplate) {
+          setSelectedTemplate(lastTemplate);
+        } else if (data.length > 0) {
+          setSelectedTemplate(data[0]);
+          localStorage.setItem("lastSelectedFormId", String(data[0].id));
+        }
+      } catch (err) {
+        console.error("Failed to fetch templates:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch templates:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const filteredTemplates = templates.filter(tpl =>
+    fetchTemplates();
+  }, [publicFormId]);
+
+  const filteredTemplates = templates.filter((tpl) =>
     (tpl.name || `Template ${tpl.id}`).toLowerCase().includes(sidebarSearch.toLowerCase())
   );
 
   return (
     <div className="layout-container" data-theme={theme}>
-      <aside className="sidebar">
-        {/* Brand */}
-        <div className="sidebar-brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="brand-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
+      {!publicMode && (
+        <aside className="sidebar">
+          <div className="sidebar-brand">
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div className="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <div className="brand-name">FormBuilder</div>
+                <div className="brand-sub">Pro Studio</div>
+              </div>
             </div>
-            <div>
-              <div className="brand-name">FormBuilder</div>
-              <div className="brand-sub">Pro Studio</div>
-            </div>
-          </div>
-          <button className="theme-toggle-btn icon-only" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            <span>{theme === "dark" ? "☀️" : "🌙"}</span>
-          </button>
-        </div>
-
-        {/* Nav */}
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map(item => (
             <button
-              key={item.id}
-              className={`nav-btn${viewMode === item.id ? " nav-btn-active" : ""}`}
-              onClick={() => setViewMode(item.id)}
+              className="theme-toggle-btn icon-only"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
+              <span>{theme === "dark" ? "☀️" : "🌙"}</span>
             </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-divider" />
-
-        {/* Templates */}
-        <div className="sidebar-section">
-          <div className="sidebar-section-header">
-            <span className="sidebar-subtitle">TEMPLATES</span>
-            <span className="template-count">{templates.length}</span>
           </div>
 
-          {/* Search */}
-          <div className="sidebar-search-wrap">
-            <span className="sidebar-search-icon">⌕</span>
-            <input
-              className="sidebar-search"
-              placeholder="Search forms…"
-              value={sidebarSearch}
-              onChange={e => setSidebarSearch(e.target.value)}
-            />
-          </div>
-
-          <ul className="template-list">
-            {loading ? (
-              <li className="sidebar-loading">
-                <span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" />
-              </li>
-            ) : filteredTemplates.length === 0 ? (
-              <li className="sidebar-empty">No forms found.</li>
-            ) : filteredTemplates.map(tpl => (
-              <li
-                key={tpl.id}
-                className={`template-item${selectedTemplate?.id === tpl.id ? " active" : ""}`}
-                onClick={() => {
-                  setSelectedTemplate(tpl);
-                  localStorage.setItem("lastSelectedFormId", String(tpl.id));
-                  setViewMode("templates");
-                }}
+          <nav className="sidebar-nav">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-btn${viewMode === item.id ? " nav-btn-active" : ""}`}
+                onClick={() => setViewMode(item.id)}
               >
-                <div className="template-item-icon">{(tpl.name || "F")[0].toUpperCase()}</div>
-                <div className="template-item-body">
-                  <span className="template-name">{tpl.name || `Template ${tpl.id}`}</span>
-                  <span className="template-id">ID · {tpl.id}</span>
-                </div>
-              </li>
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+              </button>
             ))}
-          </ul>
-        </div>
+          </nav>
 
+          <div className="sidebar-divider" />
 
-      </aside>
+          <div className="sidebar-section">
+            <div className="sidebar-section-header">
+              <span className="sidebar-subtitle">TEMPLATES</span>
+              <span className="template-count">{templates.length}</span>
+            </div>
+
+            <div className="sidebar-search-wrap">
+              <span className="sidebar-search-icon">⌕</span>
+              <input
+                className="sidebar-search"
+                placeholder="Search forms…"
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+              />
+            </div>
+
+            <ul className="template-list">
+              {loading ? (
+                <li className="sidebar-loading">
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                </li>
+              ) : filteredTemplates.length === 0 ? (
+                <li className="sidebar-empty">No forms found.</li>
+              ) : (
+                filteredTemplates.map((tpl) => (
+                  <li
+                    key={tpl.id}
+                    className={`template-item${selectedTemplate?.id === tpl.id ? " active" : ""}`}
+                    onClick={() => {
+                      setSelectedTemplate(tpl);
+                      localStorage.setItem("lastSelectedFormId", String(tpl.id));
+                      setViewMode("templates");
+                    }}
+                  >
+                    <div className="template-item-icon">{(tpl.name || "F")[0].toUpperCase()}</div>
+                    <div className="template-item-body">
+                      <span className="template-name">{tpl.name || `Template ${tpl.id}`}</span>
+                      <span className="template-id">ID · {tpl.id}</span>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+
+        </aside>
+      )}
 
       <main className="main-content">
-        {viewMode === "submissions" ? (
+        {publicMode ? (
+          selectedTemplate ? (
+            <FormRenderer key={selectedTemplate.id} schema={selectedTemplate} theme={theme} />
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📄</div>
+              <h3>Form Not Found</h3>
+              <p>This shared link does not match a loaded form.</p>
+            </div>
+          )
+        ) : viewMode === "submissions" ? (
           <SubmissionsDashboard />
         ) : viewMode === "master_table" ? (
           <MasterSubmissionsTable />
         ) : selectedTemplate ? (
-          <FormRenderer key={selectedTemplate.id} schema={selectedTemplate} theme={theme} />
+          <div className="form-page-shell">
+            <div className="form-page-toolbar">
+              <div className="form-page-title-wrap">
+                <div className="form-page-kicker">Selected Form</div>
+                <div className="form-page-title">{selectedTemplate.name || `Template ${selectedTemplate.id}`}</div>
+              </div>
+
+              <button
+                type="button"
+                className="share-trigger-btn"
+                onClick={() => setSharePanelOpen(true)}
+              >
+                Share
+              </button>
+            </div>
+
+            <FormRenderer key={selectedTemplate.id} schema={selectedTemplate} theme={theme} />
+          </div>
         ) : (
           <div className="empty-state">
             <div className="empty-state-icon">📄</div>
@@ -156,6 +259,54 @@ function App() {
           </div>
         )}
       </main>
+
+      {sharePanelOpen && selectedTemplate && (
+        <div className="share-modal-backdrop" onClick={() => setSharePanelOpen(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <div>
+                <div className="share-modal-kicker">Send form</div>
+                <div className="share-modal-title">Share "{selectedTemplate.name || `Template ${selectedTemplate.id}`}"</div>
+              </div>
+              <button type="button" className="share-close-btn" onClick={() => setSharePanelOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="share-modal-body">
+              <div className="share-link-card">
+                <div className="share-section-label">Link</div>
+                <div className="share-link-row">
+                  <input
+                    className="share-link-input"
+                    readOnly
+                    value={shareUrl}
+                    onFocus={(e) => e.target.select()}
+                    aria-label="Share link"
+                  />
+                  <button type="button" className="share-copy-btn" onClick={copyShareLink}>
+                    Copy link
+                  </button>
+                </div>
+                {copyStatus && <div className="share-copy-status">{copyStatus}</div>}
+              </div>
+
+              <div className="share-qr-card">
+                <div className="share-section-label">QR code</div>
+                <div className="share-qr-wrap">
+                  <img src={qrCodeUrl} alt="QR code for shared form" className="share-qr-image" />
+                  <div className="share-qr-copy">
+                    <div className="share-qr-text">Scan this QR code to open the public form on another device.</div>
+                    <a href={shareUrl} target="_blank" rel="noreferrer" className="share-qr-link">
+                      Open public form
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
