@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import BuilderFieldRenderer from "./BuilderFieldRenderer";
 import { normalizeBuilderSchema, resolveSchemaFormId } from "./builderRuntimeSchema";
@@ -34,10 +34,12 @@ export default function BuilderFormRenderer({
     register,
     handleSubmit,
     trigger,
+    setValue,
     formState: { errors },
   } = useForm({
     mode: "onTouched",
   });
+  const [dependencyValues, setDependencyValues] = useState({});
 
   const pages = runtimeSchema.pages || [];
   const currentPage = pages[currentPageIndex];
@@ -81,6 +83,13 @@ export default function BuilderFormRenderer({
 
     setCurrentPageIndex((value) => Math.max(0, value - 1));
   };
+
+  const handleDependencyChange = useCallback((key, value) => {
+    setDependencyValues((previous) => {
+      if (previous[key] === value) return previous;
+      return { ...previous, [key]: value };
+    });
+  }, []);
 
   const handleFormSubmit = async (data) => {
     console.log("Submitted payload:", data);
@@ -144,7 +153,7 @@ export default function BuilderFormRenderer({
         response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(plainData),
+          body: JSON.stringify({ data: plainData }),
         });
       }
 
@@ -260,7 +269,15 @@ export default function BuilderFormRenderer({
                 return (
                   <div key={row.id} style={{ ...buildGridContainerStyle(effectiveGrid), marginBottom: 16 }}>
                     {rowFields.map((field) => (
-                      <BuilderFieldRenderer key={field.id} field={field} register={register} errors={errors} />
+                      <BuilderFieldRenderer
+                        key={field.id}
+                        field={field}
+                        register={register}
+                        errors={errors}
+                        dependencyValues={dependencyValues}
+                        onDependencyChange={handleDependencyChange}
+                        setValue={setValue}
+                      />
                     ))}
                   </div>
                 );

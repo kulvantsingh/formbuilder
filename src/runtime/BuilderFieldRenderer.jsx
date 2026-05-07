@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { sanitizeRichText } from "../richText";
 
@@ -53,6 +53,25 @@ function matchesAcceptedFileType(file, acceptedType) {
     return fileType.startsWith(prefix);
   }
   return fileType === normalizedType;
+}
+
+function resolveEndpoint(endpoint, dependencyValues) {
+  return endpoint.replace(/\{(\w+)\}/g, (_, key) => dependencyValues?.[key] ?? "");
+}
+
+function mapApiOptions(data, apiConfig) {
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+  return rows.map((item) => ({
+    label: item?.[apiConfig.labelKey] ?? item?.label ?? item?.name ?? "",
+    value: String(item?.[apiConfig.valueKey] ?? item?.value ?? item?.id ?? ""),
+  })).filter((option) => option.label !== "" && option.value !== "");
 }
 
 function buildRules(field) {
@@ -216,7 +235,7 @@ function AttachmentControl({ field, register, rules, hasError }) {
         setSelectedFiles(files);
       },
     });
-  }, [field.name, field.validation, register]);
+  }, [field, register]);
 
   const previewUrl = useMemo(
     () => (previewFile ? URL.createObjectURL(previewFile) : ""),
@@ -442,7 +461,143 @@ function TableControl({ field, register, errors }) {
   );
 }
 
-function InputControl({ field, register, errors }) {
+function SelectControl({
+  field,
+  inputProps,
+  dependencyValues,
+  onDependencyChange,
+  setValue,
+}) {
+  const { apiConfig, dependsOn, dependencyKey } = field;
+  const [apiOptions, setApiOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const previousDependencySignature = useRef("");
+  const previousResolvedUrl = useRef("");
+
+  const dependencyKeys = useMemo(() => {
+    if (Array.isArray(dependsOn)) return dependsOn;
+    return dependsOn ? [dependsOn] : [];
+  }, [dependsOn]);
+
+  const dependencySignature = dependencyKeys
+    .map((key) => `${key}:${dependencyValues?.[key] ?? ""}`)
+    .join("|");
+  const hasAllDependencies = dependencyKeys.every((key) => Boolean(dependencyValues?.[key]));
+  const isDisabled = dependencyKeys.length > 0 && !hasAllDependencies;
+
+  const fetchOptions = useCallback(async (endpoint, config) => {
+    try {
+      setLoading(true);
+      setFetchError(null);
+      const response = await fetch(endpoint, { method: config.method || "GET" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setApiOptions(mapApiOptions(data, config));
+    } catch (error) {
+      console.error("Failed to load select options:", error);
+      setApiOptions([]);
+      setFetchError("Failed to load options");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!apiConfig?.endpoint) return;
+
+    if (dependencyKeys.length > 0) {
+      if (!hasAllDependencies) {
+        const shouldClear =
+          previousDependencySignature.current !== "" ||
+          previousResolvedUrl.current !== "";
+        setApiOptions([]);
+        setFetchError(null);
+        previousResolvedUrl.current = "";
+        previousDependencySignature.current = "";
+        if (shouldClear) {
+          if (field.name) setValue?.(field.name, "");
+          if (dependencyKey) onDependencyChange?.(dependencyKey, "");
+        }
+        return;
+      }
+
+      if (dependencySignature === previousDependencySignature.current) return;
+      previousDependencySignature.current = dependencySignature;
+      previousResolvedUrl.current = "";
+      if (field.name) setValue?.(field.name, "");
+      if (dependencyKey) onDependencyChange?.(dependencyKey, "");
+    }
+
+    const resolvedUrl = resolveEndpoint(apiConfig.endpoint, dependencyValues || {});
+    if (/\{(\w+)\}/.test(resolvedUrl)) return;
+    if (resolvedUrl === previousResolvedUrl.current) return;
+
+    previousResolvedUrl.current = resolvedUrl;
+    fetchOptions(resolvedUrl, apiConfig);
+  }, [
+    apiConfig,
+    apiConfig?.endpoint,
+    apiConfig?.method,
+    apiConfig?.labelKey,
+    apiConfig?.valueKey,
+    dependencyKey,
+    dependencyValues,
+    dependencyKeys.length,
+    dependencySignature,
+    fetchOptions,
+    field.name,
+    hasAllDependencies,
+    onDependencyChange,
+    setValue,
+  ]);
+
+  const options = apiConfig ? apiOptions : field.options || [];
+  const parentLabel = dependencyKeys
+    .map((key) => key.replace(/([A-Z])/g, " $1").toLowerCase())
+    .join(" and ");
+
+  const handleChange = (event) => {
+    inputProps.onChange?.(event);
+    if (dependencyKey) onDependencyChange?.(dependencyKey, event.target.value);
+  };
+
+  return (
+    <>
+      <select
+        className="builder-form-input"
+        style={{
+          ...(field.styles || {}),
+          opacity: isDisabled ? 0.5 : undefined,
+          cursor: isDisabled ? "not-allowed" : undefined,
+        }}
+        disabled={isDisabled}
+        {...inputProps}
+        onChange={handleChange}
+      >
+        <option value="">
+          {isDisabled
+            ? `Select ${parentLabel || "parent"} first`
+            : loading
+              ? "Loading..."
+              : field.placeholder || "Select..."}
+        </option>
+        {options.map((option, index) => {
+          const optionLabel = typeof option === "object" ? option.label : option;
+          const optionValue = typeof option === "object" ? option.value : option;
+          return (
+            <option key={`${optionValue}-${index}`} value={optionValue}>
+              {optionLabel}
+            </option>
+          );
+        })}
+      </select>
+      {fetchError && <p className="builder-form-error">{fetchError}</p>}
+    </>
+  );
+}
+
+function InputControl({ field, register, errors, dependencyValues, onDependencyChange, setValue }) {
   const rules = buildRules(field);
   const inputProps = register(field.name, field.type === "number"
     ? { ...rules, valueAsNumber: true }
@@ -494,14 +649,13 @@ function InputControl({ field, register, errors }) {
       );
     case "select":
       return (
-        <select className="builder-form-input" style={field.styles || {}} {...inputProps}>
-          <option value="">{field.placeholder || "Select..."}</option>
-          {(field.options || []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <SelectControl
+          field={field}
+          inputProps={inputProps}
+          dependencyValues={dependencyValues}
+          onDependencyChange={onDependencyChange}
+          setValue={setValue}
+        />
       );
     case "radio":
       return (
@@ -616,7 +770,14 @@ function InputControl({ field, register, errors }) {
   }
 }
 
-export default function BuilderFieldRenderer({ field, register, errors }) {
+export default function BuilderFieldRenderer({
+  field,
+  register,
+  errors,
+  dependencyValues,
+  onDependencyChange,
+  setValue,
+}) {
   const error = errors?.[field.name];
   const labelPosition = field.label?.position || "top";
   const fieldStyle = {
@@ -638,7 +799,14 @@ export default function BuilderFieldRenderer({ field, register, errors }) {
       )}
 
       {field.subLabel && <p className="builder-form-sublabel">{field.subLabel}</p>}
-      <InputControl field={field} register={register} errors={errors} />
+      <InputControl
+        field={field}
+        register={register}
+        errors={errors}
+        dependencyValues={dependencyValues}
+        onDependencyChange={onDependencyChange}
+        setValue={setValue}
+      />
       {field.helperText && (
         <p
           className="builder-form-sublabel"
