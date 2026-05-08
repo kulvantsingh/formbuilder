@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildSubmissionListUrl } from "./config/dataLinks";
 
 const MasterSubmissionsTable = () => {
     const [submissions, setSubmissions] = useState([]);
@@ -16,9 +17,7 @@ const MasterSubmissionsTable = () => {
     const fetchSubmissions = async (formId) => {
         setLoading(true);
         try {
-            const url = formId
-                ? `http://10.208.22.169:8086/submissions/form/${formId}`
-                : 'http://10.208.22.169:8086/submissions';
+            const url = buildSubmissionListUrl(formId);
 
             const res = await fetch(url);
             const data = await res.json();

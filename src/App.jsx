@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import FormRenderer from "./FormRenderer";
 import SubmissionsDashboard from "./SubmissionsDashboard";
 import MasterSubmissionsTable from "./MasterSubmissionsTable";
+import { API_ORIGIN, SDK_SCRIPT_URL, buildFormSchemaUrl, buildFormSubmitUrl } from "./config/dataLinks";
 import "./App.css";
 
 const NAV_ITEMS = [
@@ -28,12 +29,50 @@ function App() {
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [sharePanelOpen, setSharePanelOpen] = useState(false);
+  const [embedPanelOpen, setEmbedPanelOpen] = useState(false);
+  const [embedMode, setEmbedMode] = useState("html");
+  const [embedCopySuccess, setEmbedCopySuccess] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   const currentUrl = window.location.origin + window.location.pathname;
   const shareUrl = selectedTemplate
     ? `${currentUrl}?share=${encodeURIComponent(selectedTemplate.id)}`
     : "";
+  const selectedFormId = selectedTemplate?.id ? String(selectedTemplate.id) : "";
+  const schemaUrl = buildFormSchemaUrl(selectedFormId);
+  const submitUrl = buildFormSubmitUrl(selectedFormId);
+  const htmlEmbedSnippet = selectedFormId
+    ? `<script src="${SDK_SCRIPT_URL}"></script>
+
+<div id="my-form"></div>
+
+<script>
+  const schemaUrl = "${schemaUrl}";
+  const submitUrl = "${submitUrl}";
+
+  window.FormBuilderSDK.mount("#my-form", {
+    schemaUrl: schemaUrl,
+    submitUrl: submitUrl
+  });
+</script>`
+    : "";
+  const reactEmbedSnippet = selectedFormId
+    ? `import React, { useEffect } from "react";
+
+export default function MyForm() {
+  useEffect(() => {
+    const instance = window.FormBuilderSDK.mount("#my-form", {
+      schemaUrl: "${schemaUrl}",
+      submitUrl: "${submitUrl}",
+    });
+
+    return () => instance.destroy();
+  }, []);
+
+  return <div id="my-form" />;
+}`
+    : "";
+  const embedSnippet = embedMode === "react" ? reactEmbedSnippet : htmlEmbedSnippet;
 
   const copyToClipboard = async (text) => {
     if (!text) return false;
@@ -78,6 +117,19 @@ function App() {
     }
   };
 
+  const copyEmbedSnippet = async () => {
+    try {
+      const copied = await copyToClipboard(embedSnippet);
+      if (!copied) throw new Error("Copy failed");
+      setCopyStatus("Embed code copied");
+      setEmbedCopySuccess(true);
+      setTimeout(() => setCopyStatus(""), 1800);
+      setTimeout(() => setEmbedCopySuccess(false), 1400);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  };
+
   const toggleTheme = () => {
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
@@ -89,7 +141,7 @@ function App() {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await fetch("http://10.208.22.169:8086/forms");
+        const response = await fetch(`${API_ORIGIN.replace(/\/$/, "")}/forms`);
         const data = await response.json();
         setTemplates(data);
 
@@ -277,13 +329,38 @@ function App() {
                 <div className="form-page-title">{selectedTemplate.name || `Template ${selectedTemplate.id}`}</div>
               </div>
 
-              <button
-                type="button"
-                className="share-trigger-btn"
-                onClick={() => setSharePanelOpen(true)}
-              >
-                Share
-              </button>
+              <div className="form-page-actions">
+                <button
+                  type="button"
+                  className="share-trigger-btn icon-only"
+                  onClick={() => setEmbedPanelOpen(true)}
+                  aria-label="Open embed dialog"
+                  title="Embed"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 8 4 12l4 4" />
+                    <path d="m16 8 4 4-4 4" />
+                    <path d="m14 5-4 14" />
+                  </svg>
+                  <span className="sr-only">Embed</span>
+                </button>
+                <button
+                  type="button"
+                  className="share-trigger-btn icon-only"
+                  onClick={() => setSharePanelOpen(true)}
+                  aria-label="Open share dialog"
+                  title="Share"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <path d="M8.6 10.5 15.4 6.5" />
+                    <path d="M8.6 13.5 15.4 17.5" />
+                  </svg>
+                  <span className="sr-only">Share</span>
+                </button>
+              </div>
             </div>
 
             <FormRenderer key={selectedTemplate.id} schema={selectedTemplate} theme={theme} />
@@ -343,6 +420,75 @@ function App() {
                     </a>
                   </div>
                 </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {embedPanelOpen && selectedTemplate && (
+        <div className="share-modal-backdrop" onClick={() => setEmbedPanelOpen(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <div>
+                <div className="share-modal-kicker">Embed with SDK</div>
+                <div className="share-modal-title">Embed "{selectedTemplate.name || `Template ${selectedTemplate.id}`}"</div>
+              </div>
+              <button type="button" className="share-close-btn" onClick={() => setEmbedPanelOpen(false)}>
+                Ã—
+              </button>
+            </div>
+
+            <div className="share-modal-body">
+              <div className="embed-panel-note">
+                Copy the snippet below and paste it into the target website. Choose HTML if you want a plain page embed, or React for a component-based app.
+              </div>
+              <div className="share-embed-tabs" role="tablist" aria-label="Embed format">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={embedMode === "html"}
+                  className={`share-embed-tab${embedMode === "html" ? " active" : ""}`}
+                  onClick={() => setEmbedMode("html")}
+                >
+                  HTML
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={embedMode === "react"}
+                  className={`share-embed-tab${embedMode === "react" ? " active" : ""}`}
+                  onClick={() => setEmbedMode("react")}
+                >
+                  React
+                </button>
+              </div>
+              <div className="share-embed-code-wrap">
+                <button
+                  type="button"
+                  className={`share-embed-copy-icon${embedCopySuccess ? " success" : ""}`}
+                  onClick={copyEmbedSnippet}
+                  disabled={!embedSnippet}
+                  aria-label="Copy embed code"
+                >
+                  {embedCopySuccess ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="9" y="9" width="10" height="10" rx="2" />
+                      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                    </svg>
+                  )}
+                </button>
+                <pre className="share-embed-code">{embedSnippet || "Select a form to generate embed code."}</pre>
+              </div>
+              <div className="share-embed-steps">
+                <div className="share-embed-step">1. Load the SDK script from your server.</div>
+                <div className="share-embed-step">2. Add a container like <code>#my-form</code> on the target page.</div>
+                <div className="share-embed-step">3. Use the generated <code>schemaUrl</code> and <code>submitUrl</code>.</div>
               </div>
             </div>
           </div>

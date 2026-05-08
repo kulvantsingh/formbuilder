@@ -3,8 +3,22 @@ import { createRoot } from "react-dom/client";
 import QRCode from "qrcode";
 import FormRenderer from "../FormRenderer";
 import { normalizeBuilderSchema, resolveSchemaFormId } from "../runtime/builderRuntimeSchema";
+import {
+  API_ORIGIN,
+  SDK_ORIGIN,
+  FORMS_BASE_URL,
+  SUBMISSIONS_BASE_URL,
+  SDK_SCRIPT_URL,
+} from "../config/dataLinks";
 
 const mountedRoots = new Map();
+const SDK_DATA_LINKS = {
+  API_ORIGIN,
+  SDK_ORIGIN,
+  FORMS_BASE_URL,
+  SUBMISSIONS_BASE_URL,
+  SDK_SCRIPT_URL,
+};
 
 function resolveTarget(target) {
   if (!target) return null;
@@ -82,6 +96,10 @@ export async function createShareArtifacts({
     shareUrl,
     qrCodeUrl,
   };
+}
+
+export function getDataLinks() {
+  return { ...SDK_DATA_LINKS };
 }
 
 async function fetchSchema(schemaUrl, requestOptions = {}) {
@@ -285,6 +303,8 @@ export function createFormBuilderSDK(defaultOptions = {}) {
     buildShareUrl,
     createQrCodeDataUrl,
     createShareArtifacts,
+    getDataLinks,
+    config: getDataLinks(),
   };
 }
 

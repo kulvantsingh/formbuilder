@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import FieldRenderer from "../FieldRenderer";
+import { API_ORIGIN } from "../config/dataLinks";
 
 const LegacyFormRenderer = ({ schema }) => {
   const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm({
@@ -83,7 +84,7 @@ const LegacyFormRenderer = ({ schema }) => {
       } else if (settings.submitUrl && settings.submitUrl.endsWith("/submit")) {
         endpoint = settings.submitUrl;
       } else {
-        const baseUrl = settings.submitUrl || "http://10.208.22.169:8086/forms";
+        const baseUrl = settings.submitUrl || `${API_ORIGIN.replace(/\/$/, "")}/forms`;
         endpoint = `${baseUrl.replace(/\/$/, "")}/${schema.id || schema.formId || "123"}/submit`;
       }
 

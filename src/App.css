@@ -69,6 +69,13 @@
   backdrop-filter: blur(10px);
 }
 
+.form-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 .form-page-title-wrap {
   min-width: 0;
 }
@@ -104,6 +111,38 @@
 
 .share-trigger-btn:hover {
   transform: translateY(-1px);
+}
+
+.share-trigger-btn.icon-only {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.share-trigger-btn.icon-only svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .share-modal-backdrop {
@@ -164,6 +203,67 @@
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0;
+}
+
+.share-close-btn::before {
+  content: "×";
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.share-close-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.share-embed-copy-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--share-card-border);
+  border-radius: 10px;
+  background: var(--share-input-bg);
+  color: var(--share-modal-text);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  z-index: 2;
+}
+
+.share-embed-copy-icon:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.share-embed-copy-icon.success {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.share-embed-copy-icon.success:hover {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.share-embed-copy-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.share-embed-copy-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 .share-modal-body {
@@ -173,7 +273,8 @@
 }
 
 .share-link-card,
-.share-qr-card {
+.share-qr-card,
+.share-embed-card {
   border: 1px solid var(--share-card-border);
   border-radius: 18px;
   background: var(--share-card-bg);
@@ -290,10 +391,86 @@
   text-decoration: underline;
 }
 
+.share-embed-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--share-card-border);
+  border-radius: 999px;
+  background: var(--share-input-bg);
+  margin-bottom: 12px;
+}
+
+.share-embed-tab {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--share-panel-muted);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-embed-tab.active {
+  background: var(--share-card-bg);
+  color: var(--share-modal-text);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+.share-embed-code-wrap {
+  position: relative;
+  border: 1px solid var(--share-card-border);
+  border-radius: 14px;
+  background: var(--share-input-bg);
+  overflow: hidden;
+}
+
+.share-embed-code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  max-height: 260px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--share-input-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Consolas, "SFMono-Regular", Menlo, Monaco, "Liberation Mono", monospace;
+}
+
+.share-embed-steps {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--share-panel-muted);
+}
+
+.share-embed-step code {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--share-input-bg) 72%, var(--share-link));
+  color: var(--share-modal-text);
+  font-size: 12px;
+}
+
+.embed-panel-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--share-panel-muted);
+  margin-bottom: 12px;
+}
+
 @media (max-width: 720px) {
   .form-page-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .form-page-actions {
+    width: 100%;
   }
 
   .share-trigger-btn {
@@ -307,6 +484,15 @@
 
   .share-copy-btn {
     width: 100%;
+  }
+
+  .share-embed-tabs {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .share-embed-tab {
+    flex: 1 1 0;
   }
 
   .share-modal-backdrop {
